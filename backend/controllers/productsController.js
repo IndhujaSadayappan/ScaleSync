@@ -13,15 +13,15 @@ const getProducts = async (req, res) => {
 const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const { price_per_kg } = req.body;
+    const { price_per_litre } = req.body;
 
-    if (price_per_kg === undefined) {
-      return res.status(400).json({ error: 'price_per_kg is required' });
+    if (price_per_litre === undefined) {
+      return res.status(400).json({ error: 'price_per_litre is required' });
     }
 
     const result = await pool.query(
-      'UPDATE products SET price_per_kg = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
-      [price_per_kg, id]
+      'UPDATE products SET price_per_litre = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
+      [price_per_litre, id]
     );
 
     if (result.rows.length === 0) {
@@ -37,15 +37,15 @@ const updateProduct = async (req, res) => {
 
 const createProduct = async (req, res) => {
   try {
-    const { name, price_per_kg } = req.body;
+    const { name, price_per_litre } = req.body;
 
-    if (!name || price_per_kg === undefined) {
-      return res.status(400).json({ error: 'name and price_per_kg are required' });
+    if (!name || price_per_litre === undefined) {
+      return res.status(400).json({ error: 'name and price_per_litre are required' });
     }
 
     const result = await pool.query(
-      'INSERT INTO products (name, price_per_kg) VALUES ($1, $2) RETURNING *',
-      [name, price_per_kg]
+      'INSERT INTO products (name, price_per_litre) VALUES ($1, $2) RETURNING *',
+      [name, price_per_litre]
     );
 
     res.status(201).json(result.rows[0]);

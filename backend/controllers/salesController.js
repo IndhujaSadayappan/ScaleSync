@@ -20,7 +20,7 @@ const createSale = async (req, res) => {
     }
 
     const product = productResult.rows[0];
-    const total_amount = (weight * product.price_per_kg).toFixed(2);
+    const total_amount = (weight * product.price_per_litre).toFixed(2);
 
     // Insert sale
     const saleResult = await pool.query(
@@ -30,8 +30,8 @@ const createSale = async (req, res) => {
 
     // Store notification
     await pool.query(
-      'INSERT INTO notifications (product_name, weight, total_amount) VALUES ($1, $2, $3)',
-      [product.name, weight, total_amount]
+      'INSERT INTO notifications (user_id, product_name, weight, total_amount) VALUES ($1, $2, $3, $4)',
+      [req.user.id, product.name, weight, total_amount]
     );
 
     // Send push notification if deviceToken provided
@@ -60,7 +60,7 @@ const getSales = async (req, res) => {
     const { filter } = req.query;
 
     let query = `
-      SELECT s.*, p.name as product_name, p.price_per_kg
+      SELECT s.*, p.name as product_name, p.price_per_litre
       FROM sales s
       JOIN products p ON s.product_id = p.id
     `;
