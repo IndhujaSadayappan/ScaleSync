@@ -11,18 +11,29 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+app.get('/', (req, res) => {
+  res.send('ScaleSync API is online. Go to /health for status.');
+});
+
 app.use('/api', routes);
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ message: 'Server is running' });
+  res.json({
+    message: 'Server is running',
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ error: 'Internal server error' });
+  console.error('SERVER ERROR:', err.stack);
+  res.status(500).json({
+    error: 'Internal server error',
+    message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message
+  });
 });
+
 
 const pool = require('./config/database');
 
