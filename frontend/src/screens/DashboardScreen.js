@@ -8,6 +8,7 @@ import {
   RefreshControl,
   Alert,
   Platform,
+  Image,
 } from 'react-native';
 import { salesService } from '../services/api';
 
@@ -40,8 +41,8 @@ const DashboardScreen = () => {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#0B0F2F" />
       </View>
     );
   }
@@ -49,38 +50,56 @@ const DashboardScreen = () => {
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0B0F2F" />
+      }
     >
-      <Text style={styles.title}>Today's Performance</Text>
 
+
+      {/* Total Earnings */}
       <View style={styles.card}>
         <Text style={styles.cardLabel}>Total Earnings</Text>
-        <Text style={styles.cardValue}>${sales?.totalEarnings || '0.00'}</Text>
+        <Text style={styles.cardValue}>
+          ₹{sales?.totalEarnings ? parseFloat(sales.totalEarnings).toFixed(2) : '0.00'}
+        </Text>
       </View>
 
+      {/* Total Transactions */}
       <View style={styles.card}>
         <Text style={styles.cardLabel}>Total Transactions</Text>
-        <Text style={styles.cardValue}>{sales?.totalTransactions || 0}</Text>
+        <Text style={styles.cardValue}>
+          {sales?.totalTransactions ?? 0}
+        </Text>
       </View>
 
+      {/* Earnings by Product */}
       <Text style={styles.subtitle}>Earnings by Product</Text>
       {sales?.earningsByCategory &&
         Object.entries(sales.earningsByCategory).map(([category, amount]) => (
           <View key={category} style={styles.categoryCard}>
             <Text style={styles.categoryName}>{category}</Text>
-            <Text style={styles.categoryAmount}>${parseFloat(amount).toFixed(2)}</Text>
+            <Text style={styles.categoryAmount}>
+              ₹{parseFloat(amount).toFixed(2)}
+            </Text>
           </View>
         ))}
 
+      {/* Recent Sales */}
       <Text style={styles.subtitle}>Recent Sales</Text>
       {sales?.sales && sales.sales.length > 0 ? (
         sales.sales.slice(0, 10).map((sale) => (
           <View key={sale.id} style={styles.saleCard}>
             <View style={styles.saleInfo}>
-              <Text style={styles.saleProduct}>{sale.product_name}</Text>
-              <Text style={styles.saleDetail}>{parseFloat(sale.weight).toFixed(2)}kg</Text>
+              <Text style={styles.saleProduct}>
+                {sale.product_name}
+              </Text>
+              <Text style={styles.saleDetail}>
+                {parseFloat(sale.weight).toFixed(2)} L
+              </Text>
             </View>
-            <Text style={styles.saleAmount}>${parseFloat(sale.total_amount).toFixed(2)}</Text>
+            <Text style={styles.saleAmount}>
+              ₹{sale.total_amount ? parseFloat(sale.total_amount).toFixed(2) : '0.00'}
+            </Text>
           </View>
         ))
       ) : (
@@ -94,101 +113,134 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
-    padding: 15,
   },
+
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+  },
+
+  header: {
+    paddingTop: 10,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#333',
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#0B0F2F',
   },
+
   card: {
-    backgroundColor: '#FFF',
-    padding: 20,
-    borderRadius: 10,
-    marginBottom: 15,
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
+    padding: 24,
+    borderRadius: 12,
+    marginBottom: 16,
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
-        shadowRadius: 3,
+        shadowRadius: 4,
       },
       android: {
-        elevation: 3,
-      },
-      web: {
-        boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.1)',
+        elevation: 2,
       },
     }),
   },
+
   cardLabel: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 10,
+    color: '#6B7280',
+    marginBottom: 8,
   },
+
   cardValue: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#007AFF',
+    color: '#0B0F2F',
   },
+
   subtitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 25,
-    marginBottom: 15,
-    color: '#333',
+    fontWeight: '600',
+    marginTop: 24,
+    marginBottom: 16,
+    marginHorizontal: 20,
+    color: '#0B0F2F',
   },
+
   categoryCard: {
-    backgroundColor: '#FFF',
-    padding: 15,
-    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 12,
     marginBottom: 10,
+    marginHorizontal: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
+
   categoryName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
-    color: '#333',
+    color: '#1F2937',
   },
+
   categoryAmount: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#34C759',
+    color: '#0B0F2F',
   },
+
   saleCard: {
-    backgroundColor: '#FFF',
-    padding: 15,
-    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 12,
     marginBottom: 10,
+    marginHorizontal: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
+
   saleInfo: {
     flex: 1,
   },
+
   saleProduct: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
   },
+
   saleDetail: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 5,
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 4,
   },
+
   saleAmount: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#007AFF',
+    color: '#0B0F2F',
   },
+
   emptyText: {
     textAlign: 'center',
-    color: '#999',
-    fontSize: 16,
+    color: '#9CA3AF',
+    fontSize: 15,
     marginTop: 20,
   },
 });

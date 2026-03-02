@@ -1,7 +1,11 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createDrawerNavigator } from '@react-navigation/drawer';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import {
+  createDrawerNavigator,
+  DrawerContentScrollView,
+  DrawerItemList
+} from '@react-navigation/drawer';
+import { TouchableOpacity, Text, StyleSheet, Image, View, SafeAreaView } from 'react-native';
 
 import LoginScreen from '../screens/LoginScreen';
 import DashboardScreen from '../screens/DashboardScreen';
@@ -12,51 +16,70 @@ import { useAuth } from '../context/AuthContext';
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 
-const DashboardStack = () => (
-  <Stack.Navigator
-    screenOptions={{
-      headerStyle: { backgroundColor: '#007AFF' },
-      headerTintColor: '#FFF',
-      headerTitleStyle: { fontWeight: 'bold' },
-    }}
-  >
-    <Stack.Screen
-      name="Dashboard"
-      component={DashboardScreen}
-      options={{ title: 'Dashboard' }}
+const HeaderLogo = () => (
+  <View style={{
+    marginRight: 15,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFF'
+  }}>
+    <Image
+      source={require('../../assets/logo.png')}
+      style={{ width: '100%', height: '100%' }}
+      resizeMode="cover"
     />
+  </View>
+);
+
+const CustomDrawerContent = (props) => {
+  const { logout } = useAuth();
+
+  return (
+    <SafeAreaView style={{ flex: 1 }}>
+      <DrawerContentScrollView {...props}>
+        <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: '#F3F4F6', marginBottom: 10 }}>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#0B0F2F' }}>ScaleSync</Text>
+        </View>
+        <DrawerItemList {...props} />
+      </DrawerContentScrollView>
+
+      <View style={{ padding: 20, borderTopWidth: 1, borderTopColor: '#F3F4F6' }}>
+        <TouchableOpacity
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            padding: 12,
+            backgroundColor: '#FEE2E2',
+            borderRadius: 8
+          }}
+          onPress={() => logout()}
+        >
+          <Text style={{ color: '#EF4444', fontWeight: 'bold', marginLeft: 10 }}>Logout</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
+};
+
+const DashboardStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="Dashboard" component={DashboardScreen} />
   </Stack.Navigator>
 );
 
 const NotificationsStack = () => (
-  <Stack.Navigator
-    screenOptions={{
-      headerStyle: { backgroundColor: '#007AFF' },
-      headerTintColor: '#FFF',
-      headerTitleStyle: { fontWeight: 'bold' },
-    }}
-  >
-    <Stack.Screen
-      name="NotificationsNav"
-      component={NotificationsScreen}
-      options={{ title: 'Notifications' }}
-    />
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="NotificationsNav" component={NotificationsScreen} />
   </Stack.Navigator>
 );
 
 const PricesStack = () => (
-  <Stack.Navigator
-    screenOptions={{
-      headerStyle: { backgroundColor: '#007AFF' },
-      headerTintColor: '#FFF',
-      headerTitleStyle: { fontWeight: 'bold' },
-    }}
-  >
-    <Stack.Screen
-      name="PricesNav"
-      component={PricesScreen}
-      options={{ title: 'Update Prices' }}
-    />
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="PricesNav" component={PricesScreen} />
   </Stack.Navigator>
 );
 
@@ -69,11 +92,17 @@ const DrawerNavigatorComponent = () => {
 
   return (
     <Drawer.Navigator
+      drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
-        headerStyle: { backgroundColor: '#007AFF' },
-        headerTintColor: '#FFF',
+        headerStyle: { backgroundColor: '#FFFFFF', elevation: 2, shadowOpacity: 0.1 },
+        headerTintColor: '#0B0F2F',
         headerTitleStyle: { fontWeight: 'bold' },
-        drawerActiveTintColor: '#007AFF',
+        headerRight: () => <HeaderLogo />,
+        drawerActiveTintColor: '#0B0F2F',
+        drawerActiveBackgroundColor: '#F3F4F6',
+        drawerInactiveTintColor: '#4B5563',
+        drawerStyle: { backgroundColor: '#FFFFFF', width: 280 },
+        drawerLabelStyle: { fontWeight: '500' }
       }}
     >
       <Drawer.Screen

@@ -43,7 +43,7 @@ const PricesScreen = () => {
 
   const handleEdit = (product) => {
     setEditingId(product.id);
-    setEditPrice(product.price_per_kg.toString());
+    setEditPrice(product.price_per_litre.toString());
   };
 
   const handleSave = async (id) => {
@@ -70,8 +70,8 @@ const PricesScreen = () => {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#0B0F2F" />
       </View>
     );
   }
@@ -79,9 +79,9 @@ const PricesScreen = () => {
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0B0F2F" />}
     >
-      <Text style={styles.title}>Product Prices</Text>
+
 
       {products && products.length > 0 ? (
         products.map((product) => (
@@ -94,7 +94,7 @@ const PricesScreen = () => {
                   style={styles.priceInput}
                   value={editPrice}
                   onChangeText={setEditPrice}
-                  placeholder="Enter price per kg"
+                  placeholder="Enter price per litre"
                   keyboardType="decimal-pad"
                   placeholderTextColor="#999"
                 />
@@ -115,7 +115,7 @@ const PricesScreen = () => {
               </View>
             ) : (
               <View style={styles.priceContainer}>
-                <Text style={styles.price}>${parseFloat(product.price_per_kg).toFixed(2)}/kg</Text>
+                <Text style={styles.price}>₹{product.price_per_litre ? parseFloat(product.price_per_litre).toFixed(2) : '0.00'}/litre</Text>
                 <TouchableOpacity
                   style={styles.editButton}
                   onPress={() => handleEdit(product)}
@@ -137,23 +137,36 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
-    padding: 15,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+  },
+  header: {
+    paddingTop: 10,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#333',
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#0B0F2F',
   },
   productCard: {
-    backgroundColor: '#FFF',
-    padding: 15,
-    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
+    padding: 20,
+    borderRadius: 12,
     marginBottom: 15,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   productName: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
     marginBottom: 15,
     color: '#333',
   },
@@ -165,29 +178,32 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#34C759',
+    color: '#0B0F2F',
   },
   editButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#0B0F2F',
   },
   editButtonText: {
-    color: '#FFF',
+    color: '#0B0F2F',
     fontWeight: 'bold',
   },
   editContainer: {
     marginTop: 10,
   },
   priceInput: {
-    borderWidth: 1,
-    borderColor: '#DDD',
-    padding: 10,
-    borderRadius: 6,
-    marginBottom: 10,
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 15,
     fontSize: 16,
-    color: '#333',
+    color: '#1F2937',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
   },
   buttonGroup: {
     flexDirection: 'row',
@@ -195,24 +211,28 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 6,
+    paddingVertical: 12,
+    borderRadius: 10,
     alignItems: 'center',
     marginHorizontal: 5,
   },
   saveButton: {
-    backgroundColor: '#34C759',
+    backgroundColor: '#fbfcffff',
+    borderColor: '#0B0F2F',
+    borderWidth: 1,
   },
   cancelButton: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#EF4444',
   },
   buttonText: {
-    color: '#FFF',
+    color: '#4e11dcff',
     fontWeight: 'bold',
   },
   emptyText: {
     textAlign: 'center',
-    color: '#999',
+    color: '#9CA3AF',
     fontSize: 16,
     marginTop: 50,
   },

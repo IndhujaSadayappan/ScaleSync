@@ -39,8 +39,8 @@ const NotificationsScreen = () => {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#0B0F2F" />
       </View>
     );
   }
@@ -48,9 +48,9 @@ const NotificationsScreen = () => {
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0B0F2F" />}
     >
-      <Text style={styles.title}>Notifications</Text>
+
 
       {notifications && notifications.length > 0 ? (
         notifications.map((notification) => (
@@ -64,12 +64,12 @@ const NotificationsScreen = () => {
             <View style={styles.notificationDetails}>
               <View style={styles.detailItem}>
                 <Text style={styles.label}>Weight:</Text>
-                <Text style={styles.value}>{parseFloat(notification.weight).toFixed(2)} kg</Text>
+                <Text style={styles.value}>{parseFloat(notification.weight).toFixed(2)} L</Text>
               </View>
               <View style={styles.detailItem}>
                 <Text style={styles.label}>Amount:</Text>
                 <Text style={styles.value}>
-                  ${parseFloat(notification.total_amount).toFixed(2)}
+                  ₹{parseFloat(notification.total_amount).toFixed(2)}
                 </Text>
               </View>
             </View>
@@ -86,21 +86,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
-    padding: 15,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+  },
+  header: {
+    paddingTop: 10,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#333',
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#0B0F2F',
   },
   notificationCard: {
-    backgroundColor: '#FFF',
-    padding: 15,
-    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    padding: 18,
+    borderRadius: 12,
     marginBottom: 15,
+    marginTop: 12,
+    marginHorizontal: 20,
     borderLeftWidth: 4,
-    borderLeftColor: '#007AFF',
+    borderLeftColor: '#0B0F2F',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   notificationHeader: {
     flexDirection: 'row',
@@ -108,17 +121,20 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   productName: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: 'bold',
     color: '#333',
   },
   timestamp: {
     fontSize: 12,
-    color: '#999',
+    color: '#666',
   },
   notificationDetails: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    backgroundColor: '#F9FAFB',
+    padding: 12,
+    borderRadius: 8,
   },
   detailItem: {
     flex: 1,
@@ -126,16 +142,16 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     color: '#666',
-    marginBottom: 5,
+    marginBottom: 4,
   },
   value: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#007AFF',
+    color: '#0B0F2F',
   },
   emptyText: {
     textAlign: 'center',
-    color: '#999',
+    color: '#9CA3AF',
     fontSize: 16,
     marginTop: 50,
   },

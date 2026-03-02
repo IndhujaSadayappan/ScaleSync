@@ -32,8 +32,8 @@ export const authService = {
 
 export const productService = {
   getProducts: () => api.get('/products'),
-  updateProduct: (id, price_per_kg) => api.put(`/products/${id}`, { price_per_kg }),
-  createProduct: (name, price_per_kg) => api.post('/products', { name, price_per_kg }),
+  updateProduct: (id, price_per_litre) => api.put(`/products/${id}`, { price_per_litre }),
+  createProduct: (name, price_per_litre) => api.post('/products', { name, price_per_litre }),
 };
 
 export const salesService = {
