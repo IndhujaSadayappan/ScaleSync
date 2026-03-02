@@ -30,7 +30,9 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/login`, {
+      // Construct base URL and ensure it ends without trailing slash
+      const baseUrl = process.env.EXPO_PUBLIC_API_URL.replace(/\/$/, '');
+      const response = await fetch(`${baseUrl}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -54,7 +56,8 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (email, password) => {
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/register`, {
+      const baseUrl = process.env.EXPO_PUBLIC_API_URL.replace(/\/$/, '');
+      const response = await fetch(`${baseUrl}/api/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
