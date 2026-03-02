@@ -1,0 +1,22 @@
+const express = require('express');
+const router = express.Router();
+
+const { login, register } = require('../controllers/authController');
+const { getProducts, updateProduct, createProduct } = require('../controllers/productsController');
+const { createSale, getSales } = require('../controllers/salesController');
+const { authenticateToken } = require('../middleware/auth');
+
+// Auth routes (public)
+router.post('/login', login);
+router.post('/register', register);
+
+// Products routes (protected)
+router.get('/products', authenticateToken, getProducts);
+router.put('/products/:id', authenticateToken, updateProduct);
+router.post('/products', authenticateToken, createProduct);
+
+// Sales routes (protected)
+router.post('/sales', authenticateToken, createSale);
+router.get('/sales', authenticateToken, getSales);
+
+module.exports = router;

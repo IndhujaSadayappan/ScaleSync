@@ -1,0 +1,45 @@
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
+
+const api = axios.create({
+  baseURL: API_URL,
+  timeout: 10000,
+});
+
+api.interceptors.request.use(
+  async (config) => {
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (error) {
+      console.error('Error getting token:', error);
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+export const authService = {
+  login: (email, password) => api.post('/login', { email, password }),
+  register: (email, password) => api.post('/register', { email, password }),
+};
+
+export const productService = {
+  getProducts: () => api.get('/products'),
+  updateProduct: (id, price_per_kg) => api.put(`/products/${id}`, { price_per_kg }),
+  createProduct: (name, price_per_kg) => api.post('/products', { name, price_per_kg }),
+};
+
+export const salesService = {
+  createSale: (product_id, weight, deviceToken) =>
+    api.post('/sales', { product_id, weight, deviceToken }),
+  getSales: (filter) => api.get('/sales', { params: { filter } }),
+};
+
+export default api;
