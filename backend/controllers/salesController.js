@@ -56,10 +56,50 @@ const createSale = async (req, res) => {
   }
 };
 
+const getSales = async (req, res) => {
+  try {
+    const { filter } = req.query;
+
+    let query = `
+      SELECT s.*, p.name as product_name, p.price_per_litre
+      FROM sales s
+      JOIN products p ON s.product_id = p.id
+    `;
+
+    if (filter === 'today') {
+      query += ` WHERE DATE(s.created_at) = CURRENT_DATE`;
+    }
+
+    query += ` ORDER BY s.created_at DESC`;
+
+    const result = await pool.query(query);
+    const sales = result.rows;
+
+    const totalEarnings = sales.reduce((sum, sale) => sum + parseFloat(sale.total_amount), 0);
+    const totalTransactions = sales.length;
+
+    const earningsByCategory = {};
+    sales.forEach((sale) => {
+      if (!earningsByCategory[sale.product_name]) {
+        earningsByCategory[sale.product_name] = 0;
+      }
+      earningsByCategory[sale.product_name] += parseFloat(sale.total_amount);
+    });
+
+    res.json({
+      sales,
+      totalEarnings: totalEarnings.toFixed(2),
+      earningsByCategory,
+      totalTransactions,
+    });
+  } catch (error) {
+    console.error('Get sales error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 const getNotifications = async (req, res) => {
   try {
-    // Fetch directly from sales table (Source of Truth) for ALL sales
-    // This ensures manual SQL inserts show up even if user_id is missing
     const result = await pool.query(
       `SELECT s.id, p.name as product_name, s.weight, s.total_amount, s.created_at 
        FROM sales s 
