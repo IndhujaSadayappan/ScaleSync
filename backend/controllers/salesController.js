@@ -21,23 +21,24 @@ const createSale = async (req, res) => {
     }
 
     const product = productResult.rows[0];
-    const total_amount = (weight * product.price_per_litre).toFixed(2);
+    const numericWeight = parseFloat(weight);
+    const total_amount = (numericWeight * product.price_per_litre).toFixed(2);
 
     // Start a transaction
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
 
-      // Insert sale
+      // 1. Insert sale WITH user_id (Source of truth)
       const saleResult = await client.query(
-        'INSERT INTO sales (product_id, weight, total_amount) VALUES ($1, $2, $3) RETURNING *',
-        [product_id, weight, total_amount]
+        'INSERT INTO sales (product_id, weight, total_amount, user_id) VALUES ($1, $2, $3, $4) RETURNING *',
+        [product_id, numericWeight, total_amount, userId]
       );
 
-      // Store notification in DB
+      // 2. Store in notifications table also (Additional storage/log)
       await client.query(
         'INSERT INTO notifications (user_id, product_name, weight, total_amount) VALUES ($1, $2, $3, $4)',
-        [userId, product.name, weight, total_amount]
+        [userId, product.name, numericWeight, total_amount]
       );
 
       await client.query('COMMIT');
@@ -48,16 +49,15 @@ const createSale = async (req, res) => {
           await sendNotification(
             deviceToken,
             'Sale Recorded',
-            `${product.name} - ${weight}L: ₹${total_amount}`,
+            `${product.name} - ${numericWeight}L: ₹${total_amount}`,
             {
               product_id: product_id.toString(),
-              weight: weight.toString(),
+              weight: numericWeight.toString(),
               total_amount: total_amount.toString(),
             }
           );
         } catch (pushError) {
           console.error('Push notification error:', pushError);
-          // Don't fail the request if push notification fails
         }
       }
 
@@ -76,28 +76,28 @@ const createSale = async (req, res) => {
 
 const getSales = async (req, res) => {
   try {
+    const userId = req.user.id;
     const { filter } = req.query;
 
     let query = `
       SELECT s.*, p.name as product_name, p.price_per_litre
       FROM sales s
       JOIN products p ON s.product_id = p.id
+      WHERE s.user_id = $1
     `;
 
     if (filter === 'today') {
-      query += ` WHERE DATE(s.created_at) = CURRENT_DATE`;
+      query += ` AND DATE(s.created_at) = CURRENT_DATE`;
     }
 
     query += ` ORDER BY s.created_at DESC`;
 
-    const result = await pool.query(query);
+    const result = await pool.query(query, [userId]);
     const sales = result.rows;
 
-    // Calculate totals
     const totalEarnings = sales.reduce((sum, sale) => sum + parseFloat(sale.total_amount), 0);
     const totalTransactions = sales.length;
 
-    // Group by category (product name)
     const earningsByCategory = {};
     sales.forEach((sale) => {
       if (!earningsByCategory[sale.product_name]) {
@@ -121,10 +121,14 @@ const getSales = async (req, res) => {
 const getNotifications = async (req, res) => {
   try {
     const userId = req.user.id;
+    
+    // Fetch directly from the notifications table as requested
+    // This table now stores a persistent log of all weighing events
     const result = await pool.query(
-      'SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC',
+      'SELECT id, product_name, weight, total_amount, created_at FROM notifications WHERE user_id = $1 ORDER BY created_at DESC',
       [userId]
     );
+    
     res.json({ notifications: result.rows });
   } catch (error) {
     console.error('Get notifications error:', error);
