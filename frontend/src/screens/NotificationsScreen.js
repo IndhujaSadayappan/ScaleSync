@@ -58,7 +58,13 @@ const NotificationsScreen = () => {
             <View style={styles.notificationHeader}>
               <Text style={styles.productName}>{notification.product_name}</Text>
               <Text style={styles.timestamp}>
-                {new Date(notification.created_at).toLocaleTimeString()}
+                {new Date(notification.created_at).toLocaleString([], {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
               </Text>
             </View>
             <View style={styles.notificationDetails}>
