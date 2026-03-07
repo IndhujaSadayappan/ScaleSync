@@ -4,6 +4,7 @@ const { sendNotification } = require('../config/firebase');
 const createSale = async (req, res) => {
   try {
     const { product_id, weight, deviceToken } = req.body;
+    const userId = req.user.id;
 
     if (!product_id || !weight) {
       return res.status(400).json({ error: 'product_id and weight are required' });
@@ -22,36 +23,54 @@ const createSale = async (req, res) => {
     const product = productResult.rows[0];
     const total_amount = (weight * product.price_per_litre).toFixed(2);
 
-    // Insert sale
-    const saleResult = await pool.query(
-      'INSERT INTO sales (product_id, weight, total_amount) VALUES ($1, $2, $3) RETURNING *',
-      [product_id, weight, total_amount]
-    );
+    // Start a transaction
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
 
-    // Store notification
-    await pool.query(
-      'INSERT INTO notifications (user_id, product_name, weight, total_amount) VALUES ($1, $2, $3, $4)',
-      [req.user.id, product.name, weight, total_amount]
-    );
-
-    // Send push notification if deviceToken provided
-    if (deviceToken) {
-      await sendNotification(
-        deviceToken,
-        'Sale Recorded',
-        `${product.name} - ${weight}kg: ${total_amount}`,
-        {
-          product_id: product_id.toString(),
-          weight: weight.toString(),
-          total_amount: total_amount.toString(),
-        }
+      // Insert sale
+      const saleResult = await client.query(
+        'INSERT INTO sales (product_id, weight, total_amount) VALUES ($1, $2, $3) RETURNING *',
+        [product_id, weight, total_amount]
       );
-    }
 
-    res.status(201).json(saleResult.rows[0]);
+      // Store notification in DB
+      await client.query(
+        'INSERT INTO notifications (user_id, product_name, weight, total_amount) VALUES ($1, $2, $3, $4)',
+        [userId, product.name, weight, total_amount]
+      );
+
+      await client.query('COMMIT');
+
+      // Send push notification if deviceToken provided
+      if (deviceToken) {
+        try {
+          await sendNotification(
+            deviceToken,
+            'Sale Recorded',
+            `${product.name} - ${weight}L: ₹${total_amount}`,
+            {
+              product_id: product_id.toString(),
+              weight: weight.toString(),
+              total_amount: total_amount.toString(),
+            }
+          );
+        } catch (pushError) {
+          console.error('Push notification error:', pushError);
+          // Don't fail the request if push notification fails
+        }
+      }
+
+      res.status(201).json(saleResult.rows[0]);
+    } catch (dbError) {
+      await client.query('ROLLBACK');
+      throw dbError;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     console.error('Create sale error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 };
 
@@ -99,4 +118,18 @@ const getSales = async (req, res) => {
   }
 };
 
-module.exports = { createSale, getSales };
+const getNotifications = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const result = await pool.query(
+      'SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC',
+      [userId]
+    );
+    res.json({ notifications: result.rows });
+  } catch (error) {
+    console.error('Get notifications error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+module.exports = { createSale, getSales, getNotifications };

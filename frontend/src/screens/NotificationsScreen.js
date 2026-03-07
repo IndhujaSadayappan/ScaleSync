@@ -17,8 +17,8 @@ const NotificationsScreen = () => {
 
   const fetchNotifications = async () => {
     try {
-      const response = await salesService.getSales();
-      setNotifications(response.data.sales || []);
+      const response = await salesService.getNotifications();
+      setNotifications(response.data.notifications || []);
     } catch (error) {
       console.error('Error fetching notifications:', error);
       Alert.alert('Error', 'Failed to fetch notifications');
