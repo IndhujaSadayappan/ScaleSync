@@ -69,15 +69,16 @@ const getSales = async (req, res) => {
 
     const queryParams = [];
 
-    // Filter by date range or specific date
+    // Filter by date range or specific date using IST (Asia/Kolkata)
     if (startDate && endDate) {
       queryParams.push(startDate, endDate);
-      query += ` AND DATE(s.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata') >= $${queryParams.length - 1} AND DATE(s.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata') <= $${queryParams.length}`;
+      query += ` AND (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata')::date >= $${queryParams.length - 1} 
+                 AND (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata')::date <= $${queryParams.length}`;
     } else if (startDate) {
       queryParams.push(startDate);
-      query += ` AND DATE(s.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata') = $${queryParams.length}`;
+      query += ` AND (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata')::date = $${queryParams.length}`;
     } else if (filter === 'today') {
-      query += ` AND DATE(s.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE`;
+      query += ` AND (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date`;
     }
 
     // Filter by categories
