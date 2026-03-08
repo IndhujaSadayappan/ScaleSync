@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }) => {
     try {
       // Construct base URL and ensure it ends without trailing slash
       // Construct base URL safely (handle both https://url.com and https://url.com/api)
-      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://scalesync.onrender.com/api';
       const baseUrl = apiUrl.endsWith('/api') ? apiUrl.replace(/\/api$/, '') : apiUrl.replace(/\/$/, '');
       const response = await fetch(`${baseUrl}/api/login`, {
         method: 'POST',
@@ -59,7 +59,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (email, password) => {
     try {
-      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://scalesync.onrender.com/api';
       const baseUrl = apiUrl.endsWith('/api') ? apiUrl.replace(/\/api$/, '') : apiUrl.replace(/\/$/, '');
       const response = await fetch(`${baseUrl}/api/register`, {
         method: 'POST',
