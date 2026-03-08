@@ -6,7 +6,7 @@ import RootNavigator from './src/navigation/DrawerNavigator';
 export default function App() {
   return (
     <AuthProvider>
-      <NavigationContainer>
+      <NavigationContainer documentTitle={{ formatter: (options, route) => options.title || route?.name || 'ScaleSync' }}>
         <RootNavigator />
       </NavigationContainer>
     </AuthProvider>

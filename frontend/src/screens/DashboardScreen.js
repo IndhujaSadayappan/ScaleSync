@@ -9,26 +9,48 @@ import {
   Alert,
   Platform,
   TouchableOpacity,
+  Modal,
 } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { format } from 'date-fns';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { Ionicons } from '@expo/vector-icons';
-import { salesService } from '../services/api';
+import { salesService, productService } from '../services/api';
 
 const DashboardScreen = () => {
   const [sales, setSales] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+  const [isRange, setIsRange] = useState(false);
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date());
+  const [isPickerVisible, setPickerVisible] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState('start'); // 'start' or 'end'
 
-  const fetchSales = async (date = selectedDate) => {
+  const [availableProducts, setAvailableProducts] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [isCategoryModalVisible, setCategoryModalVisible] = useState(false);
+
+  // Fetch products for category filtering
+  const fetchProducts = async () => {
     try {
-      const formattedDate = format(date, 'yyyy-MM-dd');
-      // If it's today, we can use 'today' or the date. Let's just use the date.
-      const response = await salesService.getSales(formattedDate);
+      const response = await productService.getProducts();
+      setAvailableProducts(response.data);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
+  };
+
+  const fetchSales = async () => {
+    try {
+      const params = {
+        startDate: format(startDate, 'yyyy-MM-dd'),
+        endDate: isRange ? format(endDate, 'yyyy-MM-dd') : format(startDate, 'yyyy-MM-dd'),
+        categories: selectedCategories.length > 0 ? selectedCategories.join(',') : undefined,
+      };
+
+      const response = await salesService.getSales(params);
       setSales(response.data);
     } catch (error) {
       console.error('Error fetching sales:', error);
@@ -40,114 +62,152 @@ const DashboardScreen = () => {
   };
 
   useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  useEffect(() => {
     fetchSales();
-  }, [selectedDate]);
+  }, [startDate, endDate, selectedCategories, isRange]);
 
   const onRefresh = () => {
     setRefreshing(true);
     fetchSales();
   };
 
-  const showDatePicker = () => {
-    setDatePickerVisibility(true);
+  const showPicker = (target) => {
+    setPickerTarget(target);
+    setPickerVisible(true);
   };
 
-  const hideDatePicker = () => {
-    setDatePickerVisibility(false);
+  const handleDateConfirm = (date) => {
+    setPickerVisible(false);
+    if (pickerTarget === 'start') {
+      setStartDate(date);
+      if (date > endDate) setEndDate(date);
+    } else {
+      setEndDate(date);
+      if (date < startDate) setStartDate(date);
+    }
+    setLoading(true);
   };
 
-  const handleConfirm = (date) => {
-    hideDatePicker();
-    setSelectedDate(date);
+  const toggleCategory = (categoryName) => {
+    setSelectedCategories(prev =>
+      prev.includes(categoryName)
+        ? prev.filter(c => c !== categoryName)
+        : [...prev, categoryName]
+    );
     setLoading(true);
   };
 
   const downloadReceipt = async () => {
     if (!sales || sales.sales.length === 0) {
-      Alert.alert('No Data', 'No sales data to download for this date.');
+      Alert.alert('No Data', 'No sales records found for the selected filter.');
       return;
     }
 
     try {
+      const dateString = isRange
+        ? `${format(startDate, 'dd MMM yyyy')} to ${format(endDate, 'dd MMM yyyy')}`
+        : format(startDate, 'dd MMM yyyy');
+
+      const logoSvg = `<svg width="80" height="80" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="45" fill="#0B0F2F" />
+        <path d="M30 70 L50 30 L70 70" stroke="white" stroke-width="5" fill="none" />
+        <rect x="40" y="55" width="20" height="15" fill="#059669" />
+      </svg>`;
+
       const htmlContent = `
+        <!DOCTYPE html>
         <html>
-          <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
-            <style>
-              body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 20px; color: #333; }
-              .header { text-align: center; border-bottom: 2px solid #0B0F2F; padding-bottom: 10px; margin-bottom: 20px; }
-              .header h1 { color: #0B0F2F; margin: 0; }
-              .receipt-info { margin-bottom: 20px; }
-              .summary { background-color: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-              .summary-item { display: flex; justify-content: space-between; margin-bottom: 5px; }
-              .summary-label { font-weight: bold; }
-              .table { width: 100%; border-collapse: collapse; }
-              .table th, .table td { border-bottom: 1px solid #ddd; padding: 10px; text-align: left; }
-              .table th { background-color: #0B0F2F; color: white; }
-              .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #777; }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <h1>SaleSync - Sale Receipt</h1>
-              <p>Generated on ${format(new Date(), 'dd MMM yyyy HH:mm')}</p>
+        <head>
+          <style>
+            body { font-family: 'Helvetica', sans-serif; padding: 40px; color: #1e293b; background: white; }
+            .header-container { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 20px; margin-bottom: 30px; }
+            .logo-section { width: 100px; }
+            .company-info h1 { margin: 0; color: #0B0F2F; font-size: 28px; letter-spacing: 1px; }
+            .company-info p { margin: 5px 0 0; color: #64748b; font-size: 14px; }
+            .receipt-summary { background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 30px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; border: 1px solid #e2e8f0; }
+            .summary-item label { display: block; font-size: 12px; text-transform: uppercase; color: #64748b; margin-bottom: 5px; font-weight: bold; }
+            .summary-item span { font-size: 20px; font-weight: 800; color: #0f172a; }
+            .sales-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            .sales-table th { background: #0f172a; color: white; text-align: left; padding: 12px 15px; font-size: 13px; text-transform: uppercase; }
+            .sales-table td { padding: 12px 15px; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+            .sales-table tr:nth-child(even) { background-color: #f9fafb; }
+            .category-list { margin-top: 25px; padding: 15px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; }
+            .category-list h3 { margin: 0 0 10px; font-size: 16px; color: #0f172a; }
+            .category-grid { display: flex; flex-wrap: wrap; gap: 15px; }
+            .cat-pill { font-size: 13px; color: #475569; }
+            .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="header-container">
+            <div class="company-info">
+              <h1>SCALERSYNC</h1>
+              <p>Generated Report • ${dateString}</p>
             </div>
-            <div class="receipt-info">
-              <p><strong>Date:</strong> ${format(selectedDate, 'dd MMMM yyyy')}</p>
+            <div class="logo-section">${logoSvg}</div>
+          </div>
+
+          <div class="receipt-summary">
+            <div class="summary-item">
+              <label>Total Earnings</label>
+              <span>₹${parseFloat(sales.totalEarnings).toFixed(2)}</span>
             </div>
-            <div class="summary">
-              <div class="summary-item">
-                <span class="summary-label">Total Earnings:</span>
-                <span>₹${parseFloat(sales.totalEarnings).toFixed(2)}</span>
-              </div>
-              <div class="summary-item">
-                <span class="summary-label">Total Transactions:</span>
-                <span>${sales.totalTransactions}</span>
-              </div>
+            <div class="summary-item">
+              <label>Total Sales</label>
+              <span>${sales.totalTransactions} Items</span>
             </div>
-            <h3>Earnings by Category</h3>
-            <ul>
-              ${Object.entries(sales.earningsByCategory).map(([cat, amt]) => `
-                <li><strong>${cat}:</strong> ₹${parseFloat(amt).toFixed(2)}</li>
-              `).join('')}
-            </ul>
-            <h3>Sales Details</h3>
-            <table class="table">
-              <thead>
+          </div>
+
+          <h3>Detailed Sales Log</h3>
+          <table class="sales-table">
+            <thead>
+              <tr>
+                <th>Date/Time</th>
+                <th>Product Category</th>
+                <th>Qty (L)</th>
+                <th>Total Amt</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sales.sales.map(s => `
                 <tr>
-                  <th>Product</th>
-                  <th>Quantity</th>
-                  <th>Amount</th>
-                  <th>Time</th>
+                  <td>${format(new Date(s.created_at), 'dd MMM, hh:mm a')}</td>
+                  <td><strong>${s.product_name}</strong></td>
+                  <td>${parseFloat(s.weight).toFixed(2)} L</td>
+                  <td>₹${parseFloat(s.total_amount).toFixed(2)}</td>
                 </tr>
-              </thead>
-              <tbody>
-                ${sales.sales.map(sale => `
-                  <tr>
-                    <td>${sale.product_name}</td>
-                    <td>${parseFloat(sale.weight).toFixed(2)} L</td>
-                    <td>₹${parseFloat(sale.total_amount).toFixed(2)}</td>
-                    <td>${format(new Date(sale.created_at), 'HH:mm')}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-            <div class="footer">
-              <p>Powered by SaleSync</p>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="category-list">
+            <h3>Earnings Breakdown</h3>
+            <div class="category-grid">
+              ${Object.entries(sales.earningsByCategory).map(([cat, amt]) => `
+                <div class="cat-pill"><strong>${cat}:</strong> ₹${parseFloat(amt).toFixed(2)}</div>
+              `).join('')}
             </div>
-          </body>
+          </div>
+
+          <div class="footer">
+            <p>ScaleSync IoT Weighing System • This is a computer generated report</p>
+          </div>
+        </body>
         </html>
       `;
 
       const { uri } = await Print.printToFileAsync({ html: htmlContent });
       await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      Alert.alert('Error', 'Failed to generate receipt');
+      console.error('Receipt Error:', error);
+      Alert.alert('Error', 'Failed to create report');
     }
   };
 
-  if (loading) {
+  if (loading && !refreshing) {
     return (
       <View style={styles.loaderContainer}>
         <ActivityIndicator size="large" color="#0B0F2F" />
@@ -157,274 +217,222 @@ const DashboardScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Date Selector Header */}
-      <View style={styles.dateHeader}>
-        <TouchableOpacity style={styles.datePickerButton} onPress={showDatePicker}>
-          <Ionicons name="calendar-outline" size={20} color="#0B0F2F" style={{ marginRight: 8 }} />
-          <Text style={styles.dateText}>{format(selectedDate, 'dd MMM yyyy')}</Text>
-        </TouchableOpacity>
+      {/* Search Header */}
+      <View style={styles.searchPane}>
+        <View style={styles.tabBar}>
+          <TouchableOpacity
+            style={[styles.tab, !isRange && styles.activeTab]}
+            onPress={() => { setIsRange(false); setLoading(true); }}
+          >
+            <Text style={[styles.tabText, !isRange && styles.activeTabText]}>Single Date</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, isRange && styles.activeTab]}
+            onPress={() => { setIsRange(true); setLoading(true); }}
+          >
+            <Text style={[styles.tabText, isRange && styles.activeTabText]}>Date Range</Text>
+          </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity style={styles.downloadButton} onPress={downloadReceipt}>
-          <Ionicons name="download-outline" size={20} color="#FFFFFF" style={{ marginRight: 6 }} />
-          <Text style={styles.downloadText}>Receipt</Text>
-        </TouchableOpacity>
+        <View style={styles.filterRow}>
+          <View style={styles.dateControls}>
+            <TouchableOpacity style={styles.dateBox} onPress={() => showPicker('start')}>
+              <Text style={styles.dateBoxLabel}>{isRange ? 'From' : 'Date'}</Text>
+              <Text style={styles.dateBoxValue}>{format(startDate, 'dd MMM')}</Text>
+            </TouchableOpacity>
+
+            {isRange && (
+              <>
+                <Ionicons name="arrow-forward" size={16} color="#94A3B8" style={{ marginHorizontal: 8 }} />
+                <TouchableOpacity style={styles.dateBox} onPress={() => showPicker('end')}>
+                  <Text style={styles.dateBoxLabel}>To</Text>
+                  <Text style={styles.dateBoxValue}>{format(endDate, 'dd MMM')}</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+
+          <TouchableOpacity
+            style={[styles.catBtn, selectedCategories.length > 0 && styles.activeCatBtn]}
+            onPress={() => setCategoryModalVisible(true)}
+          >
+            <Ionicons name="options-outline" size={20} color={selectedCategories.length > 0 ? '#FFFFFF' : '#0B0F2F'} />
+            {selectedCategories.length > 0 && (
+              <View style={styles.catBadge}>
+                <Text style={styles.catBadgeText}>{selectedCategories.length}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
-        style={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0B0F2F" />
-        }
+        style={styles.scrollArea}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0B0F2F" />}
       >
-        {/* Total Earnings */}
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Total Earnings</Text>
-          <Text style={styles.cardValue}>
-            ₹{sales?.totalEarnings ? parseFloat(sales.totalEarnings).toFixed(2) : '0.00'}
-          </Text>
+        {/* Analytics Summary */}
+        <View style={styles.statCards}>
+          <View style={[styles.statCard, { backgroundColor: '#0B0F2F' }]}>
+            <Text style={[styles.statLabel, { color: '#94A3B8' }]}>NET EARNINGS</Text>
+            <Text style={[styles.statValue, { color: '#FFFFFF' }]}>₹{sales?.totalEarnings || '0.00'}</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>TOTAL ITEMS</Text>
+            <Text style={[styles.statValue, { color: '#0B0F2F' }]}>{sales?.totalTransactions || 0}</Text>
+          </View>
         </View>
 
-        {/* Total Transactions */}
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Total Transactions</Text>
-          <Text style={styles.cardValue}>
-            {sales?.totalTransactions ?? 0}
-          </Text>
+        {/* Categories Chip Row (Scrollable) */}
+        {selectedCategories.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+            {selectedCategories.map(cat => (
+              <TouchableOpacity key={cat} style={styles.activeChip} onPress={() => toggleCategory(cat)}>
+                <Text style={styles.activeChipText}>{cat}</Text>
+                <Ionicons name="close-circle" size={14} color="#FFFFFF" style={{ marginLeft: 6 }} />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Performance</Text>
+          <TouchableOpacity onPress={downloadReceipt} style={styles.actionIcon}>
+            <Ionicons name="cloud-download-outline" size={22} color="#0B0F2F" />
+            <Text style={styles.actionText}>Report</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Earnings by Product */}
-        <Text style={styles.subtitle}>Earnings by Product</Text>
+        {/* Category Breakdown */}
         {sales?.earningsByCategory && Object.keys(sales.earningsByCategory).length > 0 ? (
           Object.entries(sales.earningsByCategory).map(([category, amount]) => (
-            <View key={category} style={styles.categoryCard}>
-              <Text style={styles.categoryName}>{category}</Text>
-              <Text style={styles.categoryAmount}>
-                ₹{parseFloat(amount).toFixed(2)}
-              </Text>
+            <View key={category} style={styles.dataCard}>
+              <View style={styles.dataCardInfo}>
+                <Text style={styles.dataCardName}>{category}</Text>
+                <Text style={styles.dataCardAmount}>₹{parseFloat(amount).toFixed(2)}</Text>
+              </View>
+              <View style={styles.progressBar}>
+                <View style={[styles.progressFill, { width: '70%', backgroundColor: '#0B0F2F' }]} />
+              </View>
             </View>
           ))
         ) : (
-          <Text style={styles.emptyText}>No earnings from products</Text>
+          <View style={styles.emptyContainer}>
+            <Ionicons name="receipt-outline" size={48} color="#CBD5E1" />
+            <Text style={styles.emptyText}>No sales data found</Text>
+          </View>
         )}
 
-        {/* Recent Sales */}
-        <Text style={styles.subtitle}>Sales Details</Text>
-        {sales?.sales && sales.sales.length > 0 ? (
-          sales.sales.map((sale) => (
-            <View key={sale.id} style={styles.saleCard}>
-              <View style={styles.saleInfo}>
-                <Text style={styles.saleProduct}>{sale.product_name}</Text>
-                <Text style={styles.saleDetail}>
-                  {parseFloat(sale.weight).toFixed(2)} L • {format(new Date(sale.created_at), 'hh:mm a')}
-                </Text>
-              </View>
-              <Text style={styles.saleAmount}>
-                ₹{sale.total_amount ? parseFloat(sale.total_amount).toFixed(2) : '0.00'}
-              </Text>
-            </View>
-          ))
-        ) : (
-          <Text style={styles.emptyText}>No sales recorded for this date</Text>
-        )}
+        <View style={{ height: 40 }} />
       </ScrollView>
 
+      {/* Category Selection Modal */}
+      <Modal visible={isCategoryModalVisible} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Filter Categories</Text>
+              <TouchableOpacity onPress={() => setCategoryModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#0F172A" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ maxHeight: 400 }}>
+              {availableProducts.map(product => (
+                <TouchableOpacity
+                  key={product.id}
+                  style={[styles.catOption, selectedCategories.includes(product.name) && styles.catOptionActive]}
+                  onPress={() => toggleCategory(product.name)}
+                >
+                  <Text style={[styles.catOptionText, selectedCategories.includes(product.name) && styles.catOptionTextActive]}>
+                    {product.name}
+                  </Text>
+                  {selectedCategories.includes(product.name) && (
+                    <Ionicons name="checkmark-circle" size={20} color="#0B0F2F" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.modalBtn}
+              onPress={() => setCategoryModalVisible(false)}
+            >
+              <Text style={styles.modalBtnText}>Apply Filters</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <DateTimePickerModal
-        isVisible={isDatePickerVisible}
+        isVisible={isPickerVisible}
         mode="date"
-        onConfirm={handleConfirm}
-        onCancel={hideDatePicker}
-        date={selectedDate}
+        date={pickerTarget === 'start' ? startDate : endDate}
         maximumDate={new Date()}
+        onConfirm={handleDateConfirm}
+        onCancel={() => setPickerVisible(false)}
       />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' },
 
-  loaderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-  },
+  // Search Pane
+  searchPane: { backgroundColor: '#FFFFFF', padding: 20, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
+  tabBar: { flexDirection: 'row', backgroundColor: '#F1F5F9', borderRadius: 12, padding: 4, marginBottom: 15 },
+  tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8 },
+  activeTab: { backgroundColor: '#FFFFFF', elevation: 2, shadowOpacity: 0.1, shadowRadius: 2 },
+  tabText: { fontSize: 13, color: '#64748B', fontWeight: '600' },
+  activeTabText: { color: '#0B0F2F' },
 
-  dateHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
+  filterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  dateControls: { flexDirection: 'row', alignItems: 'center' },
+  dateBox: { backgroundColor: '#F8FAFC', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: '#E2E8F0' },
+  dateBoxLabel: { fontSize: 10, color: '#94A3B8', textTransform: 'uppercase', marginBottom: 2 },
+  dateBoxValue: { fontSize: 13, fontWeight: '700', color: '#0B0F2F' },
 
-  datePickerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
+  catBtn: { width: 44, height: 44, backgroundColor: '#F1F5F9', borderRadius: 12, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' },
+  activeCatBtn: { backgroundColor: '#0B0F2F', borderColor: '#0B0F2F' },
+  catBadge: { position: 'absolute', top: -5, right: -5, backgroundColor: '#EF4444', minWidth: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#FFF' },
+  catBadgeText: { color: '#FFF', fontSize: 10, fontWeight: '800' },
 
-  dateText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#0B0F2F',
-  },
+  // Content Area
+  scrollArea: { flex: 1 },
+  statCards: { flexDirection: 'row', padding: 20, gap: 15 },
+  statCard: { flex: 1, padding: 20, borderRadius: 20, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0' },
+  statLabel: { fontSize: 11, fontWeight: '800', marginBottom: 8, color: '#64748B', letterSpacing: 1 },
+  statValue: { fontSize: 28, fontWeight: '900' },
 
-  downloadButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0B0F2F',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
+  chipScroll: { paddingHorizontal: 20, marginBottom: 10, flexDirection: 'row' },
+  activeChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0B0F2F', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, marginRight: 8 },
+  activeChipText: { color: '#FFF', fontSize: 12, fontWeight: '600' },
 
-  downloadText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginVertical: 15 },
+  sectionTitle: { fontSize: 18, fontWeight: '800', color: '#0F172A' },
+  actionIcon: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  actionText: { fontSize: 13, fontWeight: '700', color: '#0B0F2F' },
 
-  scrollContent: {
-    flex: 1,
-  },
+  dataCard: { backgroundColor: '#FFFFFF', marginHorizontal: 20, marginBottom: 12, padding: 18, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0' },
+  dataCardInfo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  dataCardName: { fontSize: 15, fontWeight: '700', color: '#334155' },
+  dataCardAmount: { fontSize: 16, fontWeight: '800', color: '#0B0F2F' },
+  progressBar: { height: 6, backgroundColor: '#F1F5F9', borderRadius: 3, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 3 },
 
-  card: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 16,
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#0F172A',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
+  emptyContainer: { alignItems: 'center', marginTop: 60 },
+  emptyText: { color: '#94A3B8', marginTop: 12, fontSize: 15, fontWeight: '500' },
 
-  cardLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#64748B',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
-
-  cardValue: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#0B0F2F',
-  },
-
-  subtitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginTop: 10,
-    marginBottom: 12,
-    marginHorizontal: 20,
-    color: '#0B0F2F',
-  },
-
-  categoryCard: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 10,
-    marginHorizontal: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-
-  categoryName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#334155',
-  },
-
-  categoryAmount: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0B0F2F',
-  },
-
-  saleCard: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 10,
-    marginHorizontal: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-
-  saleInfo: {
-    flex: 1,
-  },
-
-  saleProduct: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-
-  saleDetail: {
-    fontSize: 13,
-    color: '#64748B',
-    marginTop: 2,
-  },
-
-  saleAmount: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#059669', // Green for amount
-  },
-
-  emptyText: {
-    textAlign: 'center',
-    color: '#94A3B8',
-    fontSize: 15,
-    marginTop: 30,
-    marginBottom: 40,
-    fontStyle: 'italic',
-  },
+  // Modal Styles
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.4)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalTitle: { fontSize: 18, fontWeight: '800', color: '#0F172A' },
+  catOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderRadius: 12, marginBottom: 8, backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0' },
+  catOptionActive: { backgroundColor: '#F1F5F9', borderColor: '#0B0F2F' },
+  catOptionText: { fontSize: 15, color: '#475569', fontWeight: '600' },
+  catOptionTextActive: { color: '#0B0F2F', fontWeight: '800' },
+  modalBtn: { backgroundColor: '#0B0F2F', padding: 18, borderRadius: 16, alignItems: 'center', marginTop: 20 },
+  modalBtnText: { color: '#FFF', fontWeight: '800', fontSize: 16 },
 });
 
 export default DashboardScreen;

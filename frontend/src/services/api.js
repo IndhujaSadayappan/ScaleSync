@@ -40,7 +40,7 @@ export const productService = {
 export const salesService = {
   createSale: (product_id, weight, deviceToken) =>
     api.post('/sales', { product_id, weight, deviceToken }),
-  getSales: (filter) => api.get('/sales', { params: { filter } }),
+  getSales: (params) => api.get('/sales', { params }),
   getNotifications: () => api.get('/notifications'),
 };
 

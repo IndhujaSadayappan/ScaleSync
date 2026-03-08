@@ -5,7 +5,7 @@ import {
   DrawerContentScrollView,
   DrawerItemList
 } from '@react-navigation/drawer';
-import { TouchableOpacity, Text, StyleSheet, Image, View, SafeAreaView } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, Image, View, SafeAreaView, ActivityIndicator } from 'react-native';
 
 import LoginScreen from '../screens/LoginScreen';
 import DashboardScreen from '../screens/DashboardScreen';
@@ -128,7 +128,11 @@ export const RootNavigator = () => {
   const { token, loading } = useAuth();
 
   if (loading) {
-    return null;
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
+        <ActivityIndicator size="large" color="#0B0F2F" />
+      </View>
+    );
   }
 
   return (
@@ -137,13 +141,13 @@ export const RootNavigator = () => {
         <Stack.Screen
           name="App"
           component={DrawerNavigatorComponent}
-          options={{ animationEnabled: false }}
+          options={{ title: 'ScaleSync', animationEnabled: false }}
         />
       ) : (
         <Stack.Screen
           name="Auth"
           component={LoginScreen}
-          options={{ animationEnabled: false }}
+          options={{ title: 'Login - ScaleSync', animationEnabled: false }}
         />
       )}
     </Stack.Navigator>

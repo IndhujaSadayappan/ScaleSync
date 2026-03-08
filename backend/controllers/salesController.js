@@ -58,23 +58,40 @@ const createSale = async (req, res) => {
 
 const getSales = async (req, res) => {
   try {
-    const { filter } = req.query;
+    const { startDate, endDate, categories, filter } = req.query;
 
     let query = `
       SELECT s.*, p.name as product_name, p.price_per_litre
       FROM sales s
       JOIN products p ON s.product_id = p.id
+      WHERE 1=1
     `;
 
-    if (filter === 'today') {
-      query += ` WHERE DATE(s.created_at) = CURRENT_DATE`;
-    } else if (filter && /^\d{4}-\d{2}-\d{2}$/.test(filter)) {
-      query += ` WHERE DATE(s.created_at) = '${filter}'`;
+    const queryParams = [];
+
+    // Filter by date range or specific date
+    if (startDate && endDate) {
+      queryParams.push(startDate, endDate);
+      query += ` AND DATE(s.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata') >= $${queryParams.length - 1} AND DATE(s.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata') <= $${queryParams.length}`;
+    } else if (startDate) {
+      queryParams.push(startDate);
+      query += ` AND DATE(s.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata') = $${queryParams.length}`;
+    } else if (filter === 'today') {
+      query += ` AND DATE(s.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE`;
+    }
+
+    // Filter by categories
+    if (categories) {
+      const categoryList = Array.isArray(categories) ? categories : categories.split(',');
+      if (categoryList.length > 0) {
+        queryParams.push(categoryList);
+        query += ` AND p.name = ANY($${queryParams.length})`;
+      }
     }
 
     query += ` ORDER BY s.created_at DESC`;
 
-    const result = await pool.query(query);
+    const result = await pool.query(query, queryParams);
     const sales = result.rows;
 
     const totalEarnings = sales.reduce((sum, sale) => sum + parseFloat(sale.total_amount), 0);
