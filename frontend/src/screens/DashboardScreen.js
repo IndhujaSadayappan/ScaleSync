@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   Modal,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -45,6 +46,8 @@ const DashboardScreen = () => {
   const [isRange, setIsRange] = useState(false);
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
 
   const [availableProducts, setAvailableProducts] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -76,6 +79,21 @@ const DashboardScreen = () => {
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const onDateChange = (event, selectedDate, target) => {
+    if (Platform.OS === 'android') {
+      setShowStartPicker(false);
+      setShowEndPicker(false);
+    }
+
+    if (selectedDate) {
+      if (target === 'start') {
+        setStartDate(selectedDate);
+      } else {
+        setEndDate(selectedDate);
+      }
     }
   };
 
@@ -207,9 +225,37 @@ const DashboardScreen = () => {
             </View>
           ) : (
             <View style={styles.mobileDateRow}>
-              {/* Fallback to simple inputs or direct methods for mobile without the bulky library if needed, 
-                   but standard inputs work best for cross-platform simplicity */}
-              <Text style={styles.mobileNotice}>Use Web for Range Filters</Text>
+              <TouchableOpacity style={styles.dateBox} onPress={() => setShowStartPicker(true)}>
+                <Text style={styles.dateLabel}>{isRange ? "From" : "Date"}</Text>
+                <Text style={styles.dateValue}>{format(startDate, 'dd MMM')}</Text>
+              </TouchableOpacity>
+
+              {isRange && (
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Ionicons name="arrow-forward" size={14} color="#94A3B8" style={{ marginHorizontal: 8 }} />
+                  <TouchableOpacity style={styles.dateBox} onPress={() => setShowEndPicker(true)}>
+                    <Text style={styles.dateLabel}>To</Text>
+                    <Text style={styles.dateValue}>{format(endDate, 'dd MMM')}</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {showStartPicker && (
+                <DateTimePicker
+                  value={startDate}
+                  mode="date"
+                  display="default"
+                  onChange={(e, d) => onDateChange(e, d, 'start')}
+                />
+              )}
+              {showEndPicker && (
+                <DateTimePicker
+                  value={endDate}
+                  mode="date"
+                  display="default"
+                  onChange={(e, d) => onDateChange(e, d, 'end')}
+                />
+              )}
             </View>
           )}
 
@@ -308,6 +354,9 @@ const styles = StyleSheet.create({
   webRow: { flexDirection: 'row', gap: 10 },
   webDatePickerContainer: { gap: 4 },
   dateLabel: { fontSize: 10, color: '#64748B', fontWeight: 'bold' },
+  mobileDateRow: { flexDirection: 'row', alignItems: 'center' },
+  dateBox: { backgroundColor: '#F8FAFC', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: '#E2E8F0' },
+  dateValue: { fontSize: 14, fontWeight: 'bold', color: '#0B0F2F' },
   mobileNotice: { fontSize: 12, color: '#94A3B8', fontStyle: 'italic' },
 
   filterBtn: { padding: 10, backgroundColor: '#F8FAFC', borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0' },
