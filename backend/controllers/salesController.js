@@ -68,6 +68,8 @@ const getSales = async (req, res) => {
 
     if (filter === 'today') {
       query += ` WHERE DATE(s.created_at) = CURRENT_DATE`;
+    } else if (filter && /^\d{4}-\d{2}-\d{2}$/.test(filter)) {
+      query += ` WHERE DATE(s.created_at) = '${filter}'`;
     }
 
     query += ` ORDER BY s.created_at DESC`;
@@ -106,7 +108,7 @@ const getNotifications = async (req, res) => {
        JOIN products p ON s.product_id = p.id 
        ORDER BY s.created_at DESC`
     );
-    
+
     res.json({ notifications: result.rows });
   } catch (error) {
     console.error('Get notifications error:', error);
