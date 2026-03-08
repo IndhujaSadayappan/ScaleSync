@@ -70,15 +70,20 @@ const getSales = async (req, res) => {
     const queryParams = [];
 
     // Filter by date range or specific date using IST (Asia/Kolkata)
-    if (startDate && endDate) {
-      queryParams.push(startDate, endDate);
-      query += ` AND (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata')::date >= $${queryParams.length - 1} 
-                 AND (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata')::date <= $${queryParams.length}`;
-    } else if (startDate) {
-      queryParams.push(startDate);
-      query += ` AND (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata')::date = $${queryParams.length}`;
-    } else if (filter === 'today') {
-      query += ` AND (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date`;
+    if (startDate || endDate || filter === 'today') {
+      let startStr = startDate;
+      let endStr = endDate || startDate;
+
+      if (filter === 'today') {
+        query += ` AND (s.created_at AT TIME ZONE 'Asia/Kolkata')::date = CURRENT_DATE`;
+      } else if (startStr && endStr) {
+        queryParams.push(startStr, endStr);
+        // Using $1 and $2 explicitly correctly handles the range
+        query += ` AND (s.created_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN $${queryParams.length - 1} AND $${queryParams.length}`;
+      } else if (startStr) {
+        queryParams.push(startStr);
+        query += ` AND (s.created_at AT TIME ZONE 'Asia/Kolkata')::date = $${queryParams.length}`;
+      }
     }
 
     // Filter by categories
@@ -99,21 +104,20 @@ const getSales = async (req, res) => {
     const totalTransactions = sales.length;
 
     const earningsByCategory = {};
-    sales.forEach((sale) => {
-      if (!earningsByCategory[sale.product_name]) {
-        earningsByCategory[sale.product_name] = 0;
-      }
-      earningsByCategory[sale.product_name] += parseFloat(sale.total_amount);
+    sales.forEach(sale => {
+      const cat = sale.product_name;
+      const amt = parseFloat(sale.total_amount);
+      earningsByCategory[cat] = (earningsByCategory[cat] || 0) + amt;
     });
 
     res.json({
       sales,
       totalEarnings: totalEarnings.toFixed(2),
-      earningsByCategory,
       totalTransactions,
+      earningsByCategory
     });
   } catch (error) {
-    console.error('Get sales error:', error);
+    console.error('Fetch sales error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
