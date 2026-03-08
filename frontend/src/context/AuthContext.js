@@ -31,7 +31,9 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       // Construct base URL and ensure it ends without trailing slash
-      const baseUrl = process.env.EXPO_PUBLIC_API_URL.replace(/\/$/, '');
+      // Construct base URL safely (handle both https://url.com and https://url.com/api)
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      const baseUrl = apiUrl.endsWith('/api') ? apiUrl.replace(/\/api$/, '') : apiUrl.replace(/\/$/, '');
       const response = await fetch(`${baseUrl}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -39,7 +41,8 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (!response.ok) {
-        throw new Error('Login failed');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Login failed');
       }
 
       const data = await response.json();
@@ -56,7 +59,8 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (email, password) => {
     try {
-      const baseUrl = process.env.EXPO_PUBLIC_API_URL.replace(/\/$/, '');
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      const baseUrl = apiUrl.endsWith('/api') ? apiUrl.replace(/\/api$/, '') : apiUrl.replace(/\/$/, '');
       const response = await fetch(`${baseUrl}/api/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -64,7 +68,8 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (!response.ok) {
-        throw new Error('Registration failed');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Registration failed');
       }
 
       const data = await response.json();

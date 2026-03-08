@@ -1,8 +1,8 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
-const BASE_URL = (API_URL || '').replace(/\/$/, '') + '/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || '';
+const BASE_URL = API_URL.endsWith('/api') ? API_URL.replace(/\/$/, '') : API_URL.replace(/\/$/, '') + '/api';
 
 const api = axios.create({
   baseURL: BASE_URL,

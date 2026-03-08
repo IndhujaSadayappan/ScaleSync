@@ -28,7 +28,7 @@ const LoginScreen = ({ navigation }) => {
       await login(email, password);
       navigation.replace('Home');
     } catch (error) {
-      Alert.alert('Login Failed', 'Invalid email or password');
+      Alert.alert('Login Failed', error.message || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
@@ -45,7 +45,7 @@ const LoginScreen = ({ navigation }) => {
       await register(email, password);
       navigation.replace('Home');
     } catch (error) {
-      Alert.alert('Registration Failed', 'Email might already exist or server error');
+      Alert.alert('Registration Failed', error.message || 'Server error');
     } finally {
       setLoading(false);
     }
