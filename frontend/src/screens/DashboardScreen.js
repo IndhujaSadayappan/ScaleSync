@@ -391,8 +391,8 @@ const styles = StyleSheet.create({
   activeFilterBtn: { backgroundColor: '#0B0F2F' },
 
   mainArea: { flex: 1 },
-  summaryGrid: { flexDirection: 'row', padding: 20, gap: 12 },
-  simpleCard: { flex: 1, backgroundColor: '#F8FAFC', padding: 15, borderRadius: 12, borderLeftWidth: 3, borderLeftColor: '#0B0F2F' },
+  summaryGrid: { flexDirection: 'row', padding: 20, gap: 12, flexWrap: 'wrap' },
+  simpleCard: { flex: 1, minWidth: 140, backgroundColor: '#F8FAFC', padding: 15, borderRadius: 12, borderLeftWidth: 3, borderLeftColor: '#0B0F2F' },
   cardInfoLabel: { fontSize: 10, color: '#64748B', fontWeight: 'bold', marginBottom: 5 },
   cardInfoValue: { fontSize: 20, fontWeight: 'bold', color: '#0B0F2F' },
 

@@ -199,6 +199,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: 10,
     },
     stockText: {
         fontSize: 20,
@@ -233,13 +235,15 @@ const styles = StyleSheet.create({
     buttonGroup: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: 10,
     },
     button: {
         flex: 1,
+        minWidth: 100,
         paddingVertical: 12,
         borderRadius: 10,
         alignItems: 'center',
-        marginHorizontal: 5,
     },
     saveButton: {
         backgroundColor: '#fbfcffff',
@@ -264,6 +268,7 @@ const styles = StyleSheet.create({
     actionButtons: {
         flexDirection: 'row',
         alignItems: 'center',
+        flexWrap: 'wrap',
         gap: 10,
     },
     deleteButton: {
