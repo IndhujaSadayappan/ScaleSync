@@ -9,7 +9,6 @@ import {
     ActivityIndicator,
     Alert,
     RefreshControl,
-    Modal,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,10 +20,6 @@ const StockScreen = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [editStock, setEditStock] = useState('');
-    const [addModalVisible, setAddModalVisible] = useState(false);
-    const [selectedProduct, setSelectedProduct] = useState(null);
-    const [showProductDropdown, setShowProductDropdown] = useState(false);
-    const [newStock, setNewStock] = useState('');
 
     const fetchData = async () => {
         try {
@@ -100,31 +95,6 @@ const StockScreen = () => {
         );
     };
 
-    const handleAdd = async () => {
-        if (!selectedProduct || !newStock) {
-            Alert.alert('Error', 'Please select a product and enter initial stock');
-            return;
-        }
-        try {
-            // Set initial stock for the selected product
-            await stockService.updateStock(selectedProduct.id, parseFloat(newStock));
-            setAddModalVisible(false);
-            setSelectedProduct(null);
-            setShowProductDropdown(false);
-            setNewStock('');
-            fetchData();
-            Alert.alert('Success', 'Stock added successfully');
-        } catch (error) {
-            console.error(error);
-            Alert.alert('Error', 'Failed to add stock');
-        }
-    };
-
-    const dropdownProducts = stockItems.map(item => ({
-        id: item.product_id,
-        name: item.product_name
-    }));
-
     if (loading) {
         return (
             <View style={styles.loaderContainer}>
@@ -138,11 +108,6 @@ const StockScreen = () => {
             style={styles.container}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0B0F2F" />}
         >
-            <TouchableOpacity style={styles.topAddBtn} onPress={() => setAddModalVisible(true)}>
-                <Ionicons name="add-circle-outline" size={24} color="#FFF" />
-                <Text style={styles.topAddBtnText}>Add New Stock</Text>
-            </TouchableOpacity>
-
             {stockItems && stockItems.length > 0 ? (
                 stockItems.map((item) => (
                     <View key={item.product_id} style={styles.productCard}>
@@ -199,68 +164,6 @@ const StockScreen = () => {
             ) : (
                 <Text style={styles.emptyText}>No stock records found</Text>
             )}
-
-            <Modal visible={addModalVisible} animationType="fade" transparent>
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Add Stock for Product</Text>
-
-                        <TouchableOpacity
-                            style={styles.modalDropdown}
-                            onPress={() => setShowProductDropdown(!showProductDropdown)}
-                        >
-                            <Text style={{ color: selectedProduct ? '#1F2937' : '#9CA3AF' }}>
-                                {selectedProduct ? selectedProduct.name : 'Select Product'}
-                            </Text>
-                            <Ionicons name="chevron-down" size={20} color="#9CA3AF" />
-                        </TouchableOpacity>
-
-                        {showProductDropdown && (
-                            <View style={styles.dropdownContainer}>
-                                {dropdownProducts.length > 0 ? (
-                                    <ScrollView style={{ maxHeight: 150 }}>
-                                        {dropdownProducts.map(p => (
-                                            <TouchableOpacity
-                                                key={p.id}
-                                                style={styles.dropdownItem}
-                                                onPress={() => {
-                                                    setSelectedProduct(p);
-                                                    setShowProductDropdown(false);
-                                                }}
-                                            >
-                                                <Text style={styles.dropdownItemText}>{p.name}</Text>
-                                            </TouchableOpacity>
-                                        ))}
-                                    </ScrollView>
-                                ) : (
-                                    <Text style={styles.noProductText}>No products available. Add in Prices tab.</Text>
-                                )}
-                            </View>
-                        )}
-
-                        <TextInput
-                            style={styles.modalInput}
-                            placeholder="Initial Stock (kg)"
-                            placeholderTextColor="#9CA3AF"
-                            value={newStock}
-                            onChangeText={setNewStock}
-                            keyboardType="decimal-pad"
-                        />
-
-                        <View style={styles.modalBtns}>
-                            <TouchableOpacity style={styles.modalBtnCancel} onPress={() => {
-                                setAddModalVisible(false);
-                                setShowProductDropdown(false);
-                            }}>
-                                <Text style={styles.modalBtnCancelText}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.modalBtnSave} onPress={handleAdd}>
-                                <Text style={styles.modalBtnSaveText}>Save</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
         </ScrollView>
     );
 };
@@ -367,106 +270,6 @@ const styles = StyleSheet.create({
         padding: 8,
         backgroundColor: '#FEE2E2',
         borderRadius: 8,
-    },
-    topAddBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#0B0F2F',
-        marginHorizontal: 20,
-        marginTop: 20,
-        padding: 12,
-        borderRadius: 12,
-        gap: 8,
-    },
-    topAddBtnText: {
-        color: '#FFF',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center',
-        padding: 20,
-    },
-    modalContent: {
-        backgroundColor: '#FFF',
-        borderRadius: 15,
-        padding: 20,
-    },
-    modalTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#0B0F2F',
-        marginBottom: 15,
-    },
-    modalInput: {
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
-        borderRadius: 10,
-        padding: 12,
-        fontSize: 16,
-        marginBottom: 15,
-        color: '#1F2937',
-    },
-    modalDropdown: {
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
-        borderRadius: 10,
-        padding: 12,
-        marginBottom: 15,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    modalBtns: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        gap: 10,
-    },
-    modalBtnCancel: {
-        padding: 10,
-    },
-    modalBtnCancelText: {
-        color: '#6B7280',
-        fontWeight: 'bold',
-        fontSize: 16,
-    },
-    modalBtnSave: {
-        backgroundColor: '#0B0F2F',
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 8,
-    },
-    modalBtnSaveText: {
-        color: '#FFF',
-        fontWeight: 'bold',
-        fontSize: 16,
-    },
-    dropdownContainer: {
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
-        borderRadius: 10,
-        marginBottom: 15,
-        backgroundColor: '#F9FAFB',
-        marginTop: -10,
-        overflow: 'hidden',
-    },
-    dropdownItem: {
-        padding: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6',
-    },
-    dropdownItemText: {
-        fontSize: 16,
-        color: '#374151',
-    },
-    noProductText: {
-        padding: 12,
-        fontSize: 14,
-        color: '#9CA3AF',
-        textAlign: 'center',
     },
 });
 
