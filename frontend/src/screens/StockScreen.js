@@ -21,17 +21,22 @@ const StockScreen = () => {
     const [editingId, setEditingId] = useState(null);
     const [editStock, setEditStock] = useState('');
     const [addModalVisible, setAddModalVisible] = useState(false);
-    const [newName, setNewName] = useState('');
-    const [newPrice, setNewPrice] = useState('');
+    const [selectedProduct, setSelectedProduct] = useState(null);
+    const [showProductDropdown, setShowProductDropdown] = useState(false);
+    const [availableProducts, setAvailableProducts] = useState([]);
     const [newStock, setNewStock] = useState('');
 
-    const fetchStock = async () => {
+    const fetchData = async () => {
         try {
-            const response = await stockService.getStock();
-            setStockItems(response.data);
+            const [stockRes, productsRes] = await Promise.all([
+                stockService.getStock(),
+                productService.getProducts()
+            ]);
+            setStockItems(stockRes.data);
+            setAvailableProducts(productsRes.data);
         } catch (error) {
-            console.error('Error fetching stock:', error);
-            Alert.alert('Error', 'Failed to fetch stock');
+            console.error('Error fetching data:', error);
+            Alert.alert('Error', 'Failed to fetch data');
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -39,12 +44,12 @@ const StockScreen = () => {
     };
 
     useEffect(() => {
-        fetchStock();
+        fetchData();
     }, []);
 
     const onRefresh = () => {
         setRefreshing(true);
-        fetchStock();
+        fetchData();
     };
 
     const handleEdit = (item) => {
@@ -61,7 +66,7 @@ const StockScreen = () => {
         try {
             await stockService.updateStock(id, parseFloat(editStock));
             setEditingId(null);
-            fetchStock();
+            fetchData();
             Alert.alert('Success', 'Stock updated successfully');
         } catch (error) {
             console.error('Error updating stock:', error);
@@ -86,7 +91,7 @@ const StockScreen = () => {
                     onPress: async () => {
                         try {
                             await productService.deleteProduct(id);
-                            fetchStock();
+                            fetchData();
                             Alert.alert('Success', 'Stock deleted successfully');
                         } catch (error) {
                             Alert.alert('Error', 'Failed to delete stock');
@@ -98,27 +103,28 @@ const StockScreen = () => {
     };
 
     const handleAdd = async () => {
-        if (!newName || !newPrice || !newStock) {
-            Alert.alert('Error', 'Please fill all fields');
+        if (!selectedProduct || !newStock) {
+            Alert.alert('Error', 'Please select a product and enter initial stock');
             return;
         }
         try {
-            // Create product
-            const res = await productService.createProduct(newName, parseFloat(newPrice));
-            const newProductId = res.data.id;
-            // Set initial stock
-            await stockService.updateStock(newProductId, parseFloat(newStock));
+            // Set initial stock for the selected product
+            await stockService.updateStock(selectedProduct.id, parseFloat(newStock));
             setAddModalVisible(false);
-            setNewName('');
-            setNewPrice('');
+            setSelectedProduct(null);
+            setShowProductDropdown(false);
             setNewStock('');
-            fetchStock();
+            fetchData();
             Alert.alert('Success', 'Stock added successfully');
         } catch (error) {
             console.error(error);
             Alert.alert('Error', 'Failed to add stock');
         }
     };
+
+    const unassignedProducts = availableProducts.filter(
+        p => !stockItems.some(s => s.product_id === p.id)
+    );
 
     if (loading) {
         return (
@@ -195,15 +201,58 @@ const StockScreen = () => {
                 <Text style={styles.emptyText}>No stock records found</Text>
             )}
 
-            <Modal visible={addModalVisible} animationType="slide" transparent>
+            <Modal visible={addModalVisible} animationType="fade" transparent>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Add New Stock (Product)</Text>
-                        <TextInput style={styles.modalInput} placeholder="Product Name" placeholderTextColor="#9CA3AF" value={newName} onChangeText={setNewName} />
-                        <TextInput style={styles.modalInput} placeholder="Price per Litre (₹)" placeholderTextColor="#9CA3AF" value={newPrice} onChangeText={setNewPrice} keyboardType="decimal-pad" />
-                        <TextInput style={styles.modalInput} placeholder="Initial Stock (kg)" placeholderTextColor="#9CA3AF" value={newStock} onChangeText={setNewStock} keyboardType="decimal-pad" />
+                        <Text style={styles.modalTitle}>Add Stock for Product</Text>
+
+                        <TouchableOpacity
+                            style={styles.modalDropdown}
+                            onPress={() => setShowProductDropdown(!showProductDropdown)}
+                        >
+                            <Text style={{ color: selectedProduct ? '#1F2937' : '#9CA3AF' }}>
+                                {selectedProduct ? selectedProduct.name : 'Select Product'}
+                            </Text>
+                            <Ionicons name="chevron-down" size={20} color="#9CA3AF" />
+                        </TouchableOpacity>
+
+                        {showProductDropdown && (
+                            <View style={styles.dropdownContainer}>
+                                {unassignedProducts.length > 0 ? (
+                                    <ScrollView style={{ maxHeight: 150 }}>
+                                        {unassignedProducts.map(p => (
+                                            <TouchableOpacity
+                                                key={p.id}
+                                                style={styles.dropdownItem}
+                                                onPress={() => {
+                                                    setSelectedProduct(p);
+                                                    setShowProductDropdown(false);
+                                                }}
+                                            >
+                                                <Text style={styles.dropdownItemText}>{p.name}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </ScrollView>
+                                ) : (
+                                    <Text style={styles.noProductText}>No products available. Add in Prices tab.</Text>
+                                )}
+                            </View>
+                        )}
+
+                        <TextInput
+                            style={styles.modalInput}
+                            placeholder="Initial Stock (kg)"
+                            placeholderTextColor="#9CA3AF"
+                            value={newStock}
+                            onChangeText={setNewStock}
+                            keyboardType="decimal-pad"
+                        />
+
                         <View style={styles.modalBtns}>
-                            <TouchableOpacity style={styles.modalBtnCancel} onPress={() => setAddModalVisible(false)}>
+                            <TouchableOpacity style={styles.modalBtnCancel} onPress={() => {
+                                setAddModalVisible(false);
+                                setShowProductDropdown(false);
+                            }}>
                                 <Text style={styles.modalBtnCancelText}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.modalBtnSave} onPress={handleAdd}>
@@ -362,6 +411,16 @@ const styles = StyleSheet.create({
         marginBottom: 15,
         color: '#1F2937',
     },
+    modalDropdown: {
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderRadius: 10,
+        padding: 12,
+        marginBottom: 15,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
     modalBtns: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
@@ -385,6 +444,30 @@ const styles = StyleSheet.create({
         color: '#FFF',
         fontWeight: 'bold',
         fontSize: 16,
+    },
+    dropdownContainer: {
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderRadius: 10,
+        marginBottom: 15,
+        backgroundColor: '#F9FAFB',
+        marginTop: -10,
+        overflow: 'hidden',
+    },
+    dropdownItem: {
+        padding: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F3F4F6',
+    },
+    dropdownItemText: {
+        fontSize: 16,
+        color: '#374151',
+    },
+    noProductText: {
+        padding: 12,
+        fontSize: 14,
+        color: '#9CA3AF',
+        textAlign: 'center',
     },
 });
 
