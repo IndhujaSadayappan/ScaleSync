@@ -11,6 +11,7 @@ import LoginScreen from '../screens/LoginScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import PricesScreen from '../screens/PricesScreen';
+import StockScreen from '../screens/StockScreen';
 import { useAuth } from '../context/AuthContext';
 
 const Stack = createNativeStackNavigator();
@@ -83,6 +84,12 @@ const PricesStack = () => (
   </Stack.Navigator>
 );
 
+const StockStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="StockNav" component={StockScreen} />
+  </Stack.Navigator>
+);
+
 const DrawerNavigatorComponent = () => {
   const { logout } = useAuth();
 
@@ -119,6 +126,11 @@ const DrawerNavigatorComponent = () => {
         name="Prices"
         component={PricesStack}
         options={{ title: 'Update Prices' }}
+      />
+      <Drawer.Screen
+        name="Stock"
+        component={StockStack}
+        options={{ title: 'Stock Management' }}
       />
     </Drawer.Navigator>
   );

@@ -29,6 +29,15 @@ const createSale = async (req, res) => {
         [product_id, numericWeight, total_amount, userId]
       );
 
+      // Reduce stock
+      await client.query(
+        `INSERT INTO stock (product_id, available_stock, last_updated)
+         VALUES ($2, -$1, CURRENT_TIMESTAMP)
+         ON CONFLICT (product_id) 
+         DO UPDATE SET available_stock = stock.available_stock - $1, last_updated = CURRENT_TIMESTAMP`,
+        [numericWeight, product_id]
+      );
+
       await client.query('COMMIT');
 
       if (deviceToken) {

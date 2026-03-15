@@ -44,4 +44,9 @@ export const salesService = {
   getNotifications: () => api.get('/notifications'),
 };
 
+export const stockService = {
+  getStock: () => api.get('/stock'),
+  updateStock: (product_id, stock) => api.post('/stock/update', { product_id, stock }),
+};
+
 export default api;

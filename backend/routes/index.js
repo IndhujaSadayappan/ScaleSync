@@ -4,6 +4,7 @@ const router = express.Router();
 const { login, register } = require('../controllers/authController');
 const { getProducts, updateProduct, createProduct } = require('../controllers/productsController');
 const { createSale, getSales, getNotifications } = require('../controllers/salesController');
+const { getStock, setStock } = require('../controllers/stockController');
 const { authenticateToken } = require('../middleware/auth');
 
 // Auth routes (public)
@@ -19,5 +20,9 @@ router.post('/products', authenticateToken, createProduct);
 router.post('/sales', authenticateToken, createSale);
 router.get('/sales', authenticateToken, getSales);
 router.get('/notifications', authenticateToken, getNotifications);
+
+// Stock routes (protected)
+router.get('/stock', authenticateToken, getStock);
+router.post('/stock/update', authenticateToken, setStock);
 
 module.exports = router;
