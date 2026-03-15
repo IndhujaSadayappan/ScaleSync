@@ -8,6 +8,9 @@ import {
 import { TouchableOpacity, Text, StyleSheet, Image, View, SafeAreaView, ActivityIndicator } from 'react-native';
 
 import LoginScreen from '../screens/LoginScreen';
+import DashboardScreen from '../screens/DashboardScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
+import PricesScreen from '../screens/PricesScreen';
 import StockScreen from '../screens/StockScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
 import { useAuth } from '../context/AuthContext';
