@@ -9,8 +9,10 @@ import {
     ActivityIndicator,
     Alert,
     RefreshControl,
+    Modal,
 } from 'react-native';
-import { stockService } from '../services/api';
+import { Ionicons } from '@expo/vector-icons';
+import { stockService, productService } from '../services/api';
 
 const StockScreen = () => {
     const [stockItems, setStockItems] = useState([]);
@@ -18,6 +20,10 @@ const StockScreen = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [editStock, setEditStock] = useState('');
+    const [addModalVisible, setAddModalVisible] = useState(false);
+    const [newName, setNewName] = useState('');
+    const [newPrice, setNewPrice] = useState('');
+    const [newStock, setNewStock] = useState('');
 
     const fetchStock = async () => {
         try {
@@ -68,6 +74,52 @@ const StockScreen = () => {
         setEditStock('');
     };
 
+    const handleDelete = (id, name) => {
+        Alert.alert(
+            'Delete Stock',
+            `Are you sure you want to delete ${name}? This will also remove the product and its sales history.`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await productService.deleteProduct(id);
+                            fetchStock();
+                            Alert.alert('Success', 'Stock deleted successfully');
+                        } catch (error) {
+                            Alert.alert('Error', 'Failed to delete stock');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleAdd = async () => {
+        if (!newName || !newPrice || !newStock) {
+            Alert.alert('Error', 'Please fill all fields');
+            return;
+        }
+        try {
+            // Create product
+            const res = await productService.createProduct(newName, parseFloat(newPrice));
+            const newProductId = res.data.id;
+            // Set initial stock
+            await stockService.updateStock(newProductId, parseFloat(newStock));
+            setAddModalVisible(false);
+            setNewName('');
+            setNewPrice('');
+            setNewStock('');
+            fetchStock();
+            Alert.alert('Success', 'Stock added successfully');
+        } catch (error) {
+            console.error(error);
+            Alert.alert('Error', 'Failed to add stock');
+        }
+    };
+
     if (loading) {
         return (
             <View style={styles.loaderContainer}>
@@ -81,6 +133,11 @@ const StockScreen = () => {
             style={styles.container}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0B0F2F" />}
         >
+            <TouchableOpacity style={styles.topAddBtn} onPress={() => setAddModalVisible(true)}>
+                <Ionicons name="add-circle-outline" size={24} color="#FFF" />
+                <Text style={styles.topAddBtnText}>Add New Stock</Text>
+            </TouchableOpacity>
+
             {stockItems && stockItems.length > 0 ? (
                 stockItems.map((item) => (
                     <View key={item.product_id} style={styles.productCard}>
@@ -116,12 +173,20 @@ const StockScreen = () => {
                                 <Text style={styles.stockText}>
                                     {item.available_stock ? parseFloat(item.available_stock).toFixed(2) : '0.00'} kg
                                 </Text>
-                                <TouchableOpacity
-                                    style={styles.editButton}
-                                    onPress={() => handleEdit(item)}
-                                >
-                                    <Text style={styles.editButtonText}>Update Stock</Text>
-                                </TouchableOpacity>
+                                <View style={styles.actionButtons}>
+                                    <TouchableOpacity
+                                        style={styles.editButton}
+                                        onPress={() => handleEdit(item)}
+                                    >
+                                        <Text style={styles.editButtonText}>Update Stock</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={styles.deleteButton}
+                                        onPress={() => handleDelete(item.product_id, item.product_name)}
+                                    >
+                                        <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                                    </TouchableOpacity>
+                                </View>
                             </View>
                         )}
                     </View>
@@ -129,6 +194,25 @@ const StockScreen = () => {
             ) : (
                 <Text style={styles.emptyText}>No stock records found</Text>
             )}
+
+            <Modal visible={addModalVisible} animationType="slide" transparent>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Add New Stock (Product)</Text>
+                        <TextInput style={styles.modalInput} placeholder="Product Name" placeholderTextColor="#9CA3AF" value={newName} onChangeText={setNewName} />
+                        <TextInput style={styles.modalInput} placeholder="Price per Litre (₹)" placeholderTextColor="#9CA3AF" value={newPrice} onChangeText={setNewPrice} keyboardType="decimal-pad" />
+                        <TextInput style={styles.modalInput} placeholder="Initial Stock (kg)" placeholderTextColor="#9CA3AF" value={newStock} onChangeText={setNewStock} keyboardType="decimal-pad" />
+                        <View style={styles.modalBtns}>
+                            <TouchableOpacity style={styles.modalBtnCancel} onPress={() => setAddModalVisible(false)}>
+                                <Text style={styles.modalBtnCancelText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.modalBtnSave} onPress={handleAdd}>
+                                <Text style={styles.modalBtnSaveText}>Save</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </ScrollView>
     );
 };
@@ -225,6 +309,82 @@ const styles = StyleSheet.create({
         color: '#9CA3AF',
         fontSize: 16,
         marginTop: 50,
+    },
+    actionButtons: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    deleteButton: {
+        padding: 8,
+        backgroundColor: '#FEE2E2',
+        borderRadius: 8,
+    },
+    topAddBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#0B0F2F',
+        marginHorizontal: 20,
+        marginTop: 20,
+        padding: 12,
+        borderRadius: 12,
+        gap: 8,
+    },
+    topAddBtnText: {
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        padding: 20,
+    },
+    modalContent: {
+        backgroundColor: '#FFF',
+        borderRadius: 15,
+        padding: 20,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#0B0F2F',
+        marginBottom: 15,
+    },
+    modalInput: {
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderRadius: 10,
+        padding: 12,
+        fontSize: 16,
+        marginBottom: 15,
+        color: '#1F2937',
+    },
+    modalBtns: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        gap: 10,
+    },
+    modalBtnCancel: {
+        padding: 10,
+    },
+    modalBtnCancelText: {
+        color: '#6B7280',
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    modalBtnSave: {
+        backgroundColor: '#0B0F2F',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 8,
+    },
+    modalBtnSaveText: {
+        color: '#FFF',
+        fontWeight: 'bold',
+        fontSize: 16,
     },
 });
 

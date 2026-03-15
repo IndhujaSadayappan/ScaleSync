@@ -55,4 +55,25 @@ const createProduct = async (req, res) => {
   }
 };
 
-module.exports = { getProducts, updateProduct, createProduct };
+const deleteProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    // First delete from stock to avoid foreign key violation
+    await pool.query('DELETE FROM stock WHERE product_id = $1', [id]);
+    // Then delete from sales to avoid foreign key violation
+    await pool.query('DELETE FROM sales WHERE product_id = $1', [id]);
+    // Finally delete product
+    const result = await pool.query('DELETE FROM products WHERE id = $1 RETURNING *', [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    res.json({ message: 'Product deleted successfully', deletedProduct: result.rows[0] });
+  } catch (error) {
+    console.error('Delete product error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+module.exports = { getProducts, updateProduct, createProduct, deleteProduct };

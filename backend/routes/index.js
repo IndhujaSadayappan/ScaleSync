@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const { login, register } = require('../controllers/authController');
-const { getProducts, updateProduct, createProduct } = require('../controllers/productsController');
+const { getProducts, updateProduct, createProduct, deleteProduct } = require('../controllers/productsController');
 const { createSale, getSales, getNotifications } = require('../controllers/salesController');
 const { getStock, setStock } = require('../controllers/stockController');
 const { authenticateToken } = require('../middleware/auth');
@@ -15,6 +15,7 @@ router.post('/register', register);
 router.get('/products', authenticateToken, getProducts);
 router.put('/products/:id', authenticateToken, updateProduct);
 router.post('/products', authenticateToken, createProduct);
+router.delete('/products/:id', authenticateToken, deleteProduct);
 
 // Sales routes (protected)
 router.post('/sales', authenticateToken, createSale);

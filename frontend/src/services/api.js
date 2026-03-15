@@ -35,6 +35,7 @@ export const productService = {
   getProducts: () => api.get('/products'),
   updateProduct: (id, price_per_litre) => api.put(`/products/${id}`, { price_per_litre }),
   createProduct: (name, price_per_litre) => api.post('/products', { name, price_per_litre }),
+  deleteProduct: (id) => api.delete(`/products/${id}`),
 };
 
 export const salesService = {

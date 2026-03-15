@@ -84,14 +84,14 @@ const getSales = async (req, res) => {
       let endStr = endDate || startDate;
 
       if (filter === 'today') {
-        query += ` AND (s.created_at AT TIME ZONE 'Asia/Kolkata')::date = CURRENT_DATE`;
+        query += ` AND (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date`;
       } else if (startStr && endStr) {
         queryParams.push(startStr, endStr);
         // Using $1 and $2 explicitly correctly handles the range
-        query += ` AND (s.created_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN $${queryParams.length - 1} AND $${queryParams.length}`;
+        query += ` AND (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata')::date BETWEEN $${queryParams.length - 1} AND $${queryParams.length}`;
       } else if (startStr) {
         queryParams.push(startStr);
-        query += ` AND (s.created_at AT TIME ZONE 'Asia/Kolkata')::date = $${queryParams.length}`;
+        query += ` AND (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata')::date = $${queryParams.length}`;
       }
     }
 
