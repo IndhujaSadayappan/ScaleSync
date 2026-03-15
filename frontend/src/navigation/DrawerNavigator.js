@@ -8,10 +8,8 @@ import {
 import { TouchableOpacity, Text, StyleSheet, Image, View, SafeAreaView, ActivityIndicator } from 'react-native';
 
 import LoginScreen from '../screens/LoginScreen';
-import DashboardScreen from '../screens/DashboardScreen';
-import NotificationsScreen from '../screens/NotificationsScreen';
-import PricesScreen from '../screens/PricesScreen';
 import StockScreen from '../screens/StockScreen';
+import AnalyticsScreen from '../screens/AnalyticsScreen';
 import { useAuth } from '../context/AuthContext';
 
 const Stack = createNativeStackNavigator();
@@ -90,6 +88,12 @@ const StockStack = () => (
   </Stack.Navigator>
 );
 
+const AnalyticsStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="AnalyticsNav" component={AnalyticsScreen} />
+  </Stack.Navigator>
+);
+
 const DrawerNavigatorComponent = () => {
   const { logout } = useAuth();
 
@@ -131,6 +135,11 @@ const DrawerNavigatorComponent = () => {
         name="Stock"
         component={StockStack}
         options={{ title: 'Stock Management' }}
+      />
+      <Drawer.Screen
+        name="Analytics"
+        component={AnalyticsStack}
+        options={{ title: 'Sales Analytics' }}
       />
     </Drawer.Navigator>
   );
