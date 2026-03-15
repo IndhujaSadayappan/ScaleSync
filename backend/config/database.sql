@@ -22,9 +22,19 @@ CREATE TABLE IF NOT EXISTS products (
 CREATE TABLE IF NOT EXISTS sales (
   id SERIAL PRIMARY KEY,
   product_id INTEGER NOT NULL REFERENCES products(id),
+  user_id INTEGER REFERENCES users(id),
   weight DECIMAL(10, 3) NOT NULL,
   total_amount DECIMAL(10, 2) NOT NULL,
+  is_mismatch BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create Stock Table
+CREATE TABLE IF NOT EXISTS stock (
+  id SERIAL PRIMARY KEY,
+  product_id INTEGER REFERENCES products(id) UNIQUE,
+  available_stock NUMERIC(10, 2) DEFAULT 0,
+  last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create Notifications Table

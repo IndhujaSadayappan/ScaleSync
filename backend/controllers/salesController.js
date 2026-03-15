@@ -41,9 +41,9 @@ const createSale = async (req, res) => {
       // Reduce stock
       await client.query(
         `INSERT INTO stock (product_id, available_stock, last_updated)
-         VALUES ($2, -$1, CURRENT_TIMESTAMP)
+         VALUES ($2, -($1::numeric), CURRENT_TIMESTAMP)
          ON CONFLICT (product_id) 
-         DO UPDATE SET available_stock = stock.available_stock - $1, last_updated = CURRENT_TIMESTAMP`,
+         DO UPDATE SET available_stock = stock.available_stock - ($1::numeric), last_updated = CURRENT_TIMESTAMP`,
         [numericWeight, product_id]
       );
 
