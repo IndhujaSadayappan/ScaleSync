@@ -103,10 +103,10 @@ const AnalyticsScreen = () => {
             style={styles.container}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0B0F2F" />}
         >
-            <View style={styles.header}>
-                <Text style={styles.title}>Sales Analytics</Text>
+            {/* <View style={styles.header}>
+                
                 <Text style={styles.subtitle}>Track your business performance</Text>
-            </View>
+            </View> */}
 
             <View style={styles.filterContainer}>
                 <TouchableOpacity
