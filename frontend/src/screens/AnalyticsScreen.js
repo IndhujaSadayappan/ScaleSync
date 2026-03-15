@@ -78,7 +78,7 @@ const AnalyticsScreen = () => {
                 stockService.getStock()
             ]);
 
-            const { totalEarnings, earningsByCategory } = salesRes.data;
+            const { sales, totalEarnings, totalTransactions, earningsByCategory } = salesRes.data;
             const stockItems = stockRes.data;
 
             // Process category sales data
@@ -104,6 +104,7 @@ const AnalyticsScreen = () => {
 
             setAnalyticsData({
                 totalEarnings,
+                totalTransactions,
                 categoryData,
                 stockData,
                 rawSales: sales,
