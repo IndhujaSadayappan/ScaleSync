@@ -10,6 +10,8 @@ import {
     Dimensions,
     Platform,
     Alert,
+    Modal,
+    FlatList,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -58,7 +60,11 @@ const AnalyticsScreen = () => {
         totalEarnings: 0,
         categoryData: [],
         stockData: [],
+        rawSales: [],
+        rawStock: [],
     });
+    const [showReport, setShowReport] = useState(false);
+    const [reportDetails, setReportDetails] = useState(null);
 
     const fetchAnalytics = async () => {
         try {
@@ -100,6 +106,8 @@ const AnalyticsScreen = () => {
                 totalEarnings,
                 categoryData,
                 stockData,
+                rawSales: sales,
+                rawStock: stockItems,
             });
         } catch (error) {
             console.error('Analytics Error:', error);
@@ -143,6 +151,65 @@ const AnalyticsScreen = () => {
                 setEndDate(selectedDate);
             }
         }
+    };
+
+    const generateReport = () => {
+        const { rawSales, rawStock } = analyticsData;
+
+        // Group sales by product
+        const productStats = {};
+
+        // Initialize with current stock info
+        rawStock.forEach(item => {
+            productStats[item.product_id] = {
+                name: item.product_name,
+                currentStock: parseFloat(item.available_stock || 0),
+                soldWeight: 0,
+                revenue: 0,
+                hasMismatch: false,
+                pricePerLitre: 0
+            };
+        });
+
+        // Add sales data
+        rawSales.forEach(sale => {
+            if (!productStats[sale.product_id]) {
+                productStats[sale.product_id] = {
+                    name: sale.product_name,
+                    currentStock: 0,
+                    soldWeight: 0,
+                    revenue: 0,
+                    hasMismatch: false,
+                    pricePerLitre: sale.price_per_litre
+                };
+            }
+            productStats[sale.product_id].soldWeight += parseFloat(sale.weight);
+            productStats[sale.product_id].revenue += parseFloat(sale.total_amount);
+            if (sale.is_mismatch) {
+                productStats[sale.product_id].hasMismatch = true;
+            }
+            if (!productStats[sale.product_id].pricePerLitre) {
+                productStats[sale.product_id].pricePerLitre = sale.price_per_litre;
+            }
+        });
+
+        const reportItems = Object.values(productStats).map(item => ({
+            ...item,
+            startStock: item.currentStock + item.soldWeight
+        })).filter(item => item.soldWeight > 0 || item.currentStock > 0);
+
+        const totalSalesWeight = reportItems.reduce((sum, item) => sum + item.soldWeight, 0);
+        const totalRevenue = reportItems.reduce((sum, item) => sum + item.revenue, 0);
+
+        setReportDetails({
+            items: reportItems,
+            totalSalesWeight,
+            totalRevenue,
+            date: format(startDate, 'dd MMMM yyyy'),
+            isRange,
+            endDate: isRange ? format(endDate, 'dd MMMM yyyy') : null
+        });
+        setShowReport(true);
     };
 
     if (loading && !refreshing) {
@@ -292,6 +359,117 @@ const AnalyticsScreen = () => {
                     )}
                 </View>
             </View>
+
+            {/* View Report Button */}
+            <TouchableOpacity
+                style={styles.reportButton}
+                onPress={generateReport}
+            >
+                <Ionicons name="document-text" size={20} color="#FFFFFF" />
+                <Text style={styles.reportButtonText}>{t('viewReport')}</Text>
+            </TouchableOpacity>
+
+            {/* Report Modal */}
+            <Modal
+                visible={showReport}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setShowReport(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>{t('dailySalesReport')}</Text>
+                            <TouchableOpacity onPress={() => setShowReport(false)}>
+                                <Ionicons name="close-circle" size={28} color="#64748B" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {reportDetails && (
+                            <ScrollView style={styles.reportScroll} showsVerticalScrollIndicator={false}>
+                                <View style={styles.reportMeta}>
+                                    <Text style={styles.reportDateLabel}>
+                                        {reportDetails.isRange ? t('reportingPeriod') : t('reportDate')}
+                                    </Text>
+                                    <Text style={styles.reportDateValue}>
+                                        {reportDetails.date}
+                                        {reportDetails.endDate ? ` - ${reportDetails.endDate}` : ''}
+                                    </Text>
+                                </View>
+
+                                <View style={styles.summaryGrid}>
+                                    <View style={[styles.summaryBox, { backgroundColor: '#F0F9FF', borderColor: '#BAE6FD' }]}>
+                                        <Text style={[styles.summaryLabel, { color: '#0369A1' }]}>{t('totalVolume')}</Text>
+                                        <Text style={[styles.summaryValue, { color: '#0C4A6E' }]}>{reportDetails.totalSalesWeight.toFixed(2)} L</Text>
+                                    </View>
+                                    <View style={[styles.summaryBox, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+                                        <Text style={[styles.summaryLabel, { color: '#15803D' }]}>{t('revenue')}</Text>
+                                        <Text style={[styles.summaryValue, { color: '#064E3B' }]}>₹{reportDetails.totalRevenue.toFixed(2)}</Text>
+                                    </View>
+                                </View>
+
+                                <Text style={styles.reportSubtitle}>{t('categoryBreakdownTitle')}</Text>
+
+                                {reportDetails.items.map((item, index) => (
+                                    <View
+                                        key={index}
+                                        style={[
+                                            styles.reportItemCard,
+                                            item.hasMismatch && styles.mismatchCard
+                                        ]}
+                                    >
+                                        <View style={styles.itemHeader}>
+                                            <Text style={[styles.itemName, item.hasMismatch && { color: '#EF4444' }]}>
+                                                {item.name}
+                                                {item.hasMismatch && ` (${t('malfunction')})`}
+                                            </Text>
+                                            <TouchableOpacity
+                                                disabled
+                                                style={[styles.statusBadge, { backgroundColor: item.hasMismatch ? '#FEE2E2' : '#F0FDF4' }]}
+                                            >
+                                                <Text style={[styles.statusBadgeText, { color: item.hasMismatch ? '#EF4444' : '#10B981' }]}>
+                                                    {item.hasMismatch ? t('alert') : t('normal')}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </View>
+
+                                        <View style={styles.itemRow}>
+                                            <View style={styles.itemCol}>
+                                                <Text style={styles.itemLabel}>{t('startStock')}</Text>
+                                                <Text style={styles.itemValueText}>{item.startStock.toFixed(2)} L</Text>
+                                            </View>
+                                            <View style={styles.itemCol}>
+                                                <Text style={styles.itemLabel}>{t('sold')}</Text>
+                                                <Text style={[styles.itemValueText, { color: '#3B82F6' }]}>- {item.soldWeight.toFixed(2)} L</Text>
+                                            </View>
+                                            <View style={styles.itemCol}>
+                                                <Text style={styles.itemLabel}>{t('current')}</Text>
+                                                <Text style={[styles.itemValueText, item.currentStock < 0 && { color: '#EF4444' }]}>
+                                                    {item.currentStock.toFixed(2)} L
+                                                </Text>
+                                            </View>
+                                        </View>
+
+                                        <View style={[styles.amountRow, { borderTopWidth: 1, borderTopColor: '#F1F5F9', marginTop: 12, paddingTop: 12 }]}>
+                                            <Text style={styles.itemLabel}>{t('totalEarnings')}</Text>
+                                            <Text style={styles.itemRevenue}>₹{item.revenue.toFixed(2)}</Text>
+                                        </View>
+                                    </View>
+                                ))}
+
+                                <View style={{ height: 40 }} />
+                            </ScrollView>
+                        )}
+
+                        <TouchableOpacity
+                            style={styles.closeModalButton}
+                            onPress={() => setShowReport(false)}
+                        >
+                            <Text style={styles.closeModalButtonText}>{t('closeReport')}</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
 
             <View style={{ height: 30 }} />
         </ScrollView>
@@ -444,6 +622,171 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         color: '#94A3B8',
         paddingVertical: 20,
+    },
+    reportButton: {
+        backgroundColor: '#0B0F2F',
+        marginHorizontal: 20,
+        padding: 16,
+        borderRadius: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        marginBottom: 20,
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+    },
+    reportButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(11, 15, 47, 0.7)',
+        justifyContent: 'flex-end',
+    },
+    modalContent: {
+        backgroundColor: '#FFFFFF',
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
+        height: '90%',
+        padding: 24,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    modalTitle: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: '#0B0F2F',
+    },
+    reportScroll: {
+        flex: 1,
+    },
+    reportMeta: {
+        marginBottom: 20,
+    },
+    reportDateLabel: {
+        fontSize: 12,
+        color: '#94A3B8',
+        fontWeight: '600',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    reportDateValue: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#334155',
+        marginTop: 4,
+    },
+    summaryGrid: {
+        flexDirection: 'row',
+        gap: 12,
+        marginBottom: 24,
+    },
+    summaryBox: {
+        flex: 1,
+        padding: 16,
+        borderRadius: 16,
+        borderWidth: 1,
+    },
+    summaryLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+        marginBottom: 4,
+    },
+    summaryValue: {
+        fontSize: 20,
+        fontWeight: '800',
+    },
+    reportSubtitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#0B0F2F',
+        marginBottom: 16,
+    },
+    reportItemCard: {
+        backgroundColor: '#F8FAFC',
+        borderRadius: 20,
+        padding: 16,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    mismatchCard: {
+        backgroundColor: '#FFF1F2',
+        borderColor: '#FECDD3',
+        borderWidth: 1.5,
+    },
+    itemHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 16,
+    },
+    itemName: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#1E293B',
+        flex: 1,
+    },
+    statusBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    statusBadgeText: {
+        fontSize: 10,
+        fontWeight: '800',
+        textTransform: 'uppercase',
+    },
+    itemRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    itemCol: {
+        flex: 1,
+    },
+    itemLabel: {
+        fontSize: 11,
+        color: '#64748B',
+        fontWeight: '600',
+        textTransform: 'uppercase',
+        marginBottom: 4,
+    },
+    itemValueText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#334155',
+    },
+    amountRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    itemRevenue: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: '#10B981',
+    },
+    closeModalButton: {
+        backgroundColor: '#F1F5F9',
+        padding: 16,
+        borderRadius: 16,
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    closeModalButtonText: {
+        color: '#475569',
+        fontSize: 16,
+        fontWeight: '700',
     }
 });
 

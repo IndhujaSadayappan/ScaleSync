@@ -39,7 +39,19 @@ const translations = {
         zeroStockAlert: 'CRITICAL: Zero Stock detected!',
         from: 'From',
         to: 'To',
-        selectDate: 'Select Date'
+        selectDate: 'Select Date',
+        viewReport: 'View Detailed Report',
+        dailySalesReport: 'Daily Sales Report',
+        totalVolume: 'Total Volume',
+        startStock: 'Start Stock',
+        sold: 'Sold',
+        current: 'Current',
+        malfunction: 'Malfunction!',
+        closeReport: 'Close Report',
+        reportingPeriod: 'Reporting Period',
+        reportDate: 'Report Date',
+        alert: 'Alert',
+        normal: 'Normal'
     },
     ta: {
         dashboard: 'முகப்பு',
@@ -78,7 +90,19 @@ const translations = {
         zeroStockAlert: 'மிகவும் முக்கியம்: இருப்பு பூஜ்ஜியம்!',
         from: 'தொடக்கம்',
         to: 'முடிவு',
-        selectDate: 'தேதியைத் தேர்ந்தெடு'
+        selectDate: 'தேதியைத் தேர்ந்தெடு',
+        viewReport: 'விரிவான அறிக்கை',
+        dailySalesReport: 'தினசரி விற்பனை அறிக்கை',
+        totalVolume: 'மொத்த அளவு',
+        startStock: 'ஆரம்ப இருப்பு',
+        sold: 'விற்பனை',
+        current: 'தற்போதைய',
+        malfunction: 'பிழை!',
+        closeReport: 'மூடவும்',
+        reportingPeriod: 'அறிக்கை காலம்',
+        reportDate: 'அறிக்கை தேதி',
+        alert: 'எச்சரிக்கை',
+        normal: 'சாதாரணமானது'
     }
 };
 
