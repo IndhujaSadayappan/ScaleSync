@@ -63,6 +63,11 @@ pool.query('SELECT NOW()')
                 ON CONFLICT (product_id) DO NOTHING;
               `, [prod.id]);
       }
+
+      await pool.query(`
+        ALTER TABLE sales ADD COLUMN IF NOT EXISTS is_mismatch BOOLEAN DEFAULT FALSE;
+      `);
+
       console.log('Stock table verified and initialized.');
     } catch (err) {
       console.error('Migration error:', err.message);

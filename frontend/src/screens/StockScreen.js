@@ -119,7 +119,7 @@ const StockScreen = () => {
                                     style={styles.stockInput}
                                     value={editStock}
                                     onChangeText={setEditStock}
-                                    placeholder="Enter total stock (kg)"
+                                    placeholder="Enter total stock (L)"
                                     keyboardType="decimal-pad"
                                     placeholderTextColor="#999"
                                 />
@@ -141,7 +141,7 @@ const StockScreen = () => {
                         ) : (
                             <View style={styles.stockContainer}>
                                 <Text style={styles.stockText}>
-                                    {item.available_stock ? parseFloat(item.available_stock).toFixed(2) : '0.00'} kg
+                                    {item.available_stock ? parseFloat(item.available_stock).toFixed(2) : '0.00'} L
                                 </Text>
                                 <View style={styles.actionButtons}>
                                     <TouchableOpacity

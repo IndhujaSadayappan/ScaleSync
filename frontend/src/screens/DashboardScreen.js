@@ -16,7 +16,8 @@ import { format } from 'date-fns';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { Ionicons } from '@expo/vector-icons';
-import { salesService, productService } from '../services/api';
+import { salesService, productService, stockService } from '../services/api';
+import { useFocusEffect } from '@react-navigation/native';
 
 // For Web date picking
 const WebDatePicker = ({ label, value, onChange }) => (
@@ -41,6 +42,7 @@ const WebDatePicker = ({ label, value, onChange }) => (
 
 const DashboardScreen = () => {
   const [sales, setSales] = useState(null);
+  const [stockItems, setStockItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isRange, setIsRange] = useState(false);
@@ -71,8 +73,12 @@ const DashboardScreen = () => {
         categories: selectedCategories.length > 0 ? selectedCategories.join(',') : undefined,
       };
 
-      const response = await salesService.getSales(params);
+      const [response, stockResponse] = await Promise.all([
+        salesService.getSales(params),
+        stockService.getStock()
+      ]);
       setSales(response.data);
+      setStockItems(stockResponse.data);
     } catch (error) {
       console.error('Error fetching sales:', error);
       Alert.alert('Error', 'Failed to fetch sales data');
@@ -97,14 +103,18 @@ const DashboardScreen = () => {
     }
   };
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchProducts();
+    }, [])
+  );
 
-  useEffect(() => {
-    setLoading(true); // Set loading to true whenever filters change
-    fetchSales();
-  }, [startDate, endDate, selectedCategories, isRange]);
+  useFocusEffect(
+    React.useCallback(() => {
+      setLoading(true); // Set loading to true whenever filters change
+      fetchSales();
+    }, [startDate, endDate, selectedCategories, isRange])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -283,6 +293,24 @@ const DashboardScreen = () => {
           </View>
         </View>
 
+        <View style={styles.sectionHead}>
+          <Text style={styles.sectionTitle}>Current Stock Levels</Text>
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.stockScroll}>
+          {stockItems && stockItems.length > 0 ? (
+            stockItems.map((item) => (
+              <View key={item.product_id} style={styles.stockCard}>
+                <Text style={styles.stockCardName}>{item.product_name}</Text>
+                <Text style={[styles.stockCardValue, parseFloat(item.available_stock) < 10 ? styles.stockLow : null]}>
+                  {item.available_stock ? parseFloat(item.available_stock).toFixed(2) : '0.00'} L
+                </Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.noDataText}>No stock data available</Text>
+          )}
+        </ScrollView>
+
         {selectedCategories.length > 0 && (
           <View style={styles.activeFilters}>
             {selectedCategories.map(cat => (
@@ -374,6 +402,11 @@ const styles = StyleSheet.create({
 
   sectionHead: { flexDirection: 'row', justifyContent: 'space-between', padding: 20, alignItems: 'center' },
   sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#0B0F2F' },
+  stockScroll: { marginHorizontal: 20, marginBottom: 20 },
+  stockCard: { backgroundColor: '#F8FAFC', padding: 15, borderRadius: 12, marginRight: 15, minWidth: 120, borderTopWidth: 3, borderTopColor: '#0B0F2F', elevation: 1 },
+  stockCardName: { fontSize: 13, color: '#64748B', fontWeight: 'bold', marginBottom: 5 },
+  stockCardValue: { fontSize: 18, fontWeight: '700', color: '#0B0F2F' },
+  stockLow: { color: '#EF4444' },
   reportBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   reportBtnText: { fontSize: 12, fontWeight: 'bold', color: '#0B0F2F' },
 

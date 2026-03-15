@@ -23,10 +23,19 @@ const createSale = async (req, res) => {
     try {
       await client.query('BEGIN');
 
+      // Check stock before sale for mismatch logging
+      const stockRes = await client.query('SELECT available_stock FROM stock WHERE product_id = $1', [product_id]);
+      let isMismatch = false;
+      if (stockRes.rows.length > 0) {
+        if (parseFloat(stockRes.rows[0].available_stock) < numericWeight) {
+          isMismatch = true;
+        }
+      }
+
       // Insert into sales table (The source of truth)
       const saleResult = await client.query(
-        'INSERT INTO sales (product_id, weight, total_amount, user_id) VALUES ($1, $2, $3, $4) RETURNING *',
-        [product_id, numericWeight, total_amount, userId]
+        'INSERT INTO sales (product_id, weight, total_amount, user_id, is_mismatch) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [product_id, numericWeight, total_amount, userId, isMismatch]
       );
 
       // Reduce stock
@@ -134,7 +143,7 @@ const getSales = async (req, res) => {
 const getNotifications = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT s.id, p.name as product_name, s.weight, s.total_amount, s.created_at 
+      `SELECT s.id, p.name as product_name, s.weight, s.total_amount, s.created_at, s.is_mismatch 
        FROM sales s 
        JOIN products p ON s.product_id = p.id 
        ORDER BY s.created_at DESC`

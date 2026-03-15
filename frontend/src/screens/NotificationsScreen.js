@@ -54,9 +54,16 @@ const NotificationsScreen = () => {
 
       {notifications && notifications.length > 0 ? (
         notifications.map((notification) => (
-          <View key={notification.id} style={styles.notificationCard}>
+          <View style={[styles.notificationCard, notification.is_mismatch ? styles.mismatchCard : null]}>
             <View style={styles.notificationHeader}>
-              <Text style={styles.productName}>{notification.product_name}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={styles.productName}>{notification.product_name}</Text>
+                {notification.is_mismatch && (
+                  <View style={styles.mismatchTag}>
+                    <Text style={styles.mismatchText}>Stock Mismatch!</Text>
+                  </View>
+                )}
+              </View>
               <Text style={styles.timestamp}>
                 {new Date(notification.created_at).toLocaleString([], {
                   year: 'numeric',
@@ -160,6 +167,21 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     fontSize: 16,
     marginTop: 50,
+  },
+  mismatchCard: {
+    borderLeftColor: '#EF4444',
+    backgroundColor: '#FEF2F2',
+  },
+  mismatchTag: {
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  mismatchText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
 });
 
