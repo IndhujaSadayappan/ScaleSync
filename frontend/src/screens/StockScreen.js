@@ -122,9 +122,7 @@ const StockScreen = () => {
         }
     };
 
-    const unassignedProducts = availableProducts.filter(
-        p => !stockItems.some(s => s.product_id === p.id)
-    );
+    const dropdownProducts = availableProducts;
 
     if (loading) {
         return (
@@ -218,9 +216,9 @@ const StockScreen = () => {
 
                         {showProductDropdown && (
                             <View style={styles.dropdownContainer}>
-                                {unassignedProducts.length > 0 ? (
+                                {dropdownProducts.length > 0 ? (
                                     <ScrollView style={{ maxHeight: 150 }}>
-                                        {unassignedProducts.map(p => (
+                                        {dropdownProducts.map(p => (
                                             <TouchableOpacity
                                                 key={p.id}
                                                 style={styles.dropdownItem}
