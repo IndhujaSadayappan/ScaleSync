@@ -411,52 +411,56 @@ const AnalyticsScreen = () => {
 
                                 <Text style={styles.reportSubtitle}>{t('categoryBreakdownTitle')}</Text>
 
-                                {reportDetails.items.map((item, index) => (
-                                    <View
-                                        key={index}
-                                        style={[
-                                            styles.reportItemCard,
-                                            item.hasMismatch && styles.mismatchCard
-                                        ]}
-                                    >
-                                        <View style={styles.itemHeader}>
-                                            <Text style={[styles.itemName, item.hasMismatch && { color: '#EF4444' }]}>
-                                                {item.name}
-                                                {item.hasMismatch && ` (${t('malfunction')})`}
-                                            </Text>
-                                            <TouchableOpacity
-                                                disabled
-                                                style={[styles.statusBadge, { backgroundColor: item.hasMismatch ? '#FEE2E2' : '#F0FDF4' }]}
-                                            >
-                                                <Text style={[styles.statusBadgeText, { color: item.hasMismatch ? '#EF4444' : '#10B981' }]}>
-                                                    {item.hasMismatch ? t('alert') : t('normal')}
-                                                </Text>
-                                            </TouchableOpacity>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                    <View style={styles.tableContainer}>
+                                        <View style={styles.tableHeader}>
+                                            <Text style={[styles.tableHeaderCell, { width: 140 }]}>Product</Text>
+                                            <Text style={[styles.tableHeaderCell, { width: 100 }]}>{t('startStock')}</Text>
+                                            <Text style={[styles.tableHeaderCell, { width: 80 }]}>{t('sold')}</Text>
+                                            <Text style={[styles.tableHeaderCell, { width: 100 }]}>{t('current')}</Text>
+                                            <Text style={[styles.tableHeaderCell, { width: 100 }]}>{t('amount')}</Text>
+                                            <Text style={[styles.tableHeaderCell, { width: 80 }]}>Status</Text>
                                         </View>
 
-                                        <View style={styles.itemRow}>
-                                            <View style={styles.itemCol}>
-                                                <Text style={styles.itemLabel}>{t('startStock')}</Text>
-                                                <Text style={styles.itemValueText}>{item.startStock.toFixed(2)} L</Text>
-                                            </View>
-                                            <View style={styles.itemCol}>
-                                                <Text style={styles.itemLabel}>{t('sold')}</Text>
-                                                <Text style={[styles.itemValueText, { color: '#3B82F6' }]}>- {item.soldWeight.toFixed(2)} L</Text>
-                                            </View>
-                                            <View style={styles.itemCol}>
-                                                <Text style={styles.itemLabel}>{t('current')}</Text>
-                                                <Text style={[styles.itemValueText, item.currentStock < 0 && { color: '#EF4444' }]}>
+                                        {reportDetails.items.map((item, index) => (
+                                            <View
+                                                key={index}
+                                                style={[
+                                                    styles.tableRow,
+                                                    index % 2 === 0 ? styles.evenRow : styles.oddRow,
+                                                    item.hasMismatch && styles.mismatchTableRow
+                                                ]}
+                                            >
+                                                <Text style={[styles.tableCell, { width: 140, fontWeight: '700' }, item.hasMismatch && { color: '#EF4444' }]} numberOfLines={1}>
+                                                    {item.name}
+                                                </Text>
+                                                <Text style={[styles.tableCell, { width: 100 }]}>{item.startStock.toFixed(2)} L</Text>
+                                                <Text style={[styles.tableCell, { width: 80, color: '#3B82F6', fontWeight: 'bold' }]}>
+                                                    {item.soldWeight.toFixed(2)}
+                                                </Text>
+                                                <Text style={[styles.tableCell, { width: 100 }, item.currentStock < 0 && { color: '#EF4444' }]}>
                                                     {item.currentStock.toFixed(2)} L
                                                 </Text>
+                                                <Text style={[styles.tableCell, { width: 100, color: '#10B981', fontWeight: 'bold' }]}>
+                                                    ₹{item.revenue.toFixed(0)}
+                                                </Text>
+                                                <View style={[styles.tableCell, { width: 80 }]}>
+                                                    <View style={[
+                                                        styles.tableStatusBadge,
+                                                        { backgroundColor: item.hasMismatch ? '#FEE2E2' : '#F0FDF4' }
+                                                    ]}>
+                                                        <Text style={[
+                                                            styles.tableStatusText,
+                                                            { color: item.hasMismatch ? '#EF4444' : '#10B981' }
+                                                        ]}>
+                                                            {item.hasMismatch ? t('alert') : t('normal')}
+                                                        </Text>
+                                                    </View>
+                                                </View>
                                             </View>
-                                        </View>
-
-                                        <View style={[styles.amountRow, { borderTopWidth: 1, borderTopColor: '#F1F5F9', marginTop: 12, paddingTop: 12 }]}>
-                                            <Text style={styles.itemLabel}>{t('totalEarnings')}</Text>
-                                            <Text style={styles.itemRevenue}>₹{item.revenue.toFixed(2)}</Text>
-                                        </View>
+                                        ))}
                                     </View>
-                                ))}
+                                </ScrollView>
 
                                 <View style={{ height: 40 }} />
                             </ScrollView>
@@ -626,23 +630,24 @@ const styles = StyleSheet.create({
     },
     reportButton: {
         backgroundColor: '#0B0F2F',
-        marginHorizontal: 20,
-        padding: 16,
-        borderRadius: 16,
+        marginHorizontal: 40, // Increased margin to reduce width
+        paddingVertical: 12, // Reduced height
+        paddingHorizontal: 20,
+        borderRadius: 12,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 10,
+        gap: 8,
         marginBottom: 20,
-        elevation: 4,
+        elevation: 3,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
-        shadowRadius: 8,
+        shadowRadius: 4,
     },
     reportButtonText: {
         color: '#FFFFFF',
-        fontSize: 16,
+        fontSize: 14, // Slightly smaller font
         fontWeight: '700',
     },
     modalOverlay: {
@@ -788,6 +793,61 @@ const styles = StyleSheet.create({
         color: '#475569',
         fontSize: 16,
         fontWeight: '700',
+    },
+    tableContainer: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        overflow: 'hidden',
+    },
+    tableHeader: {
+        flexDirection: 'row',
+        backgroundColor: '#F1F5F9',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E2E8F0',
+        paddingVertical: 12,
+    },
+    tableHeaderCell: {
+        paddingHorizontal: 12,
+        fontSize: 12,
+        fontWeight: '800',
+        color: '#475569',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    tableRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F1F5F9',
+    },
+    evenRow: {
+        backgroundColor: '#FFFFFF',
+    },
+    oddRow: {
+        backgroundColor: '#F8FAFC',
+    },
+    mismatchTableRow: {
+        backgroundColor: '#FFF1F2',
+    },
+    tableCell: {
+        paddingHorizontal: 12,
+        fontSize: 13,
+        color: '#334155',
+        fontWeight: '500',
+    },
+    tableStatusBadge: {
+        alignSelf: 'flex-start',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
+    },
+    tableStatusText: {
+        fontSize: 10,
+        fontWeight: '800',
+        textTransform: 'uppercase',
     }
 });
 
