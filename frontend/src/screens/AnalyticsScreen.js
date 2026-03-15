@@ -13,11 +13,13 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { salesService } from '../services/api';
-import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, subDays } from 'date-fns';
+import { useLanguage } from '../context/LanguageContext';
+import { format, startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns';
 
 const { width } = Dimensions.get('window');
 
 const AnalyticsScreen = () => {
+    const { t } = useLanguage();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [filterType, setFilterType] = useState('daily'); // 'daily', 'monthly'
@@ -25,7 +27,7 @@ const AnalyticsScreen = () => {
         totalEarnings: 0,
         totalTransactions: 0,
         categoryData: [],
-        timeData: [],
+        sales: [],
     });
 
     const fetchAnalytics = async () => {
@@ -48,7 +50,7 @@ const AnalyticsScreen = () => {
 
             const { sales, totalEarnings, totalTransactions, earningsByCategory } = response.data;
 
-            // Process category data for charts
+            // Process category data
             const categoryData = Object.entries(earningsByCategory).map(([name, value]) => ({
                 name,
                 value: parseFloat(value),
@@ -103,60 +105,37 @@ const AnalyticsScreen = () => {
             style={styles.container}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0B0F2F" />}
         >
-            {/* <View style={styles.header}>
-                
-                <Text style={styles.subtitle}>Track your business performance</Text>
-            </View> */}
-
             <View style={styles.filterContainer}>
                 <TouchableOpacity
                     style={[styles.filterBtn, filterType === 'daily' && styles.activeFilterBtn]}
                     onPress={() => setFilterType('daily')}
                 >
-                    <Text style={[styles.filterText, filterType === 'daily' && styles.activeFilterText]}>Today</Text>
+                    <Text style={[styles.filterText, filterType === 'daily' && styles.activeFilterText]}>{t('today')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.filterBtn, filterType === 'monthly' && styles.activeFilterBtn]}
                     onPress={() => setFilterType('monthly')}
                 >
-                    <Text style={[styles.filterText, filterType === 'monthly' && styles.activeFilterText]}>This Month</Text>
+                    <Text style={[styles.filterText, filterType === 'monthly' && styles.activeFilterText]}>{t('thisMonth')}</Text>
                 </TouchableOpacity>
             </View>
 
-            <View style={styles.statsGrid}>
-                <View style={styles.statCard}>
-                    <View style={[styles.iconBox, { backgroundColor: '#E0E7FF' }]}>
-                        <Ionicons name="wallet-outline" size={24} color="#4338CA" />
-                    </View>
-                    <Text style={styles.statLabel}>Total Revenue</Text>
-                    <Text style={styles.statValue}>₹{parseFloat(analyticsData.totalEarnings).toLocaleString('en-IN')}</Text>
-                </View>
-
-                <View style={styles.statCard}>
-                    <View style={[styles.iconBox, { backgroundColor: '#DCFCE7' }]}>
-                        <Ionicons name="cart-outline" size={24} color="#15803D" />
-                    </View>
-                    <Text style={styles.statLabel}>Total Orders</Text>
-                    <Text style={styles.statValue}>{analyticsData.totalTransactions}</Text>
-                </View>
-            </View>
-
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Sales by Category</Text>
-                <View style={styles.chartPlaceholder}>
+                <Text style={styles.sectionTitle}>{t('categoryBreakdown')}</Text>
+                <View style={styles.chartArea}>
                     {analyticsData.categoryData.length > 0 ? (
-                        analyticsData.categoryData.map((item, index) => (
-                            <View key={item.name} style={styles.barContainer}>
-                                <View style={styles.barLabelGroup}>
-                                    <Text style={styles.barLabel}>{item.name}</Text>
+                        analyticsData.categoryData.map((item) => (
+                            <View key={item.name} style={styles.barItem}>
+                                <View style={styles.barHeader}>
+                                    <Text style={styles.barName}>{item.name}</Text>
                                     <Text style={styles.barValue}>₹{item.value.toFixed(0)}</Text>
                                 </View>
-                                <View style={styles.barBg}>
+                                <View style={styles.barTrack}>
                                     <View
                                         style={[
                                             styles.barFill,
                                             {
-                                                width: `${(item.value / analyticsData.totalEarnings) * 100}%`,
+                                                width: `${(item.value / (analyticsData.totalEarnings || 1)) * 100}%`,
                                                 backgroundColor: item.color
                                             }
                                         ]}
@@ -165,22 +144,26 @@ const AnalyticsScreen = () => {
                             </View>
                         ))
                     ) : (
-                        <Text style={styles.emptyText}>No sales data for this period</Text>
+                        <Text style={styles.emptyText}>{t('noSales')}</Text>
                     )}
                 </View>
             </View>
 
-            <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Recent Insights</Text>
-                    <Ionicons name="trending-up" size={20} color="#10B981" />
+            <View style={styles.statsGrid}>
+                <View style={styles.statCard}>
+                    <View style={[styles.iconBox, { backgroundColor: '#E0E7FF' }]}>
+                        <Ionicons name="wallet-outline" size={24} color="#4338CA" />
+                    </View>
+                    <Text style={styles.statLabel}>{t('revenue')}</Text>
+                    <Text style={styles.statValue}>₹{parseFloat(analyticsData.totalEarnings).toLocaleString('en-IN')}</Text>
                 </View>
-                <View style={styles.insightCard}>
-                    <Text style={styles.insightText}>
-                        {filterType === 'daily'
-                            ? "You've processed " + analyticsData.totalTransactions + " transactions today."
-                            : "Best performing category this month is " + (analyticsData.categoryData[0]?.name || "N/A")}
-                    </Text>
+
+                <View style={styles.statCard}>
+                    <View style={[styles.iconBox, { backgroundColor: '#DCFCE7' }]}>
+                        <Ionicons name="cart-outline" size={24} color="#15803D" />
+                    </View>
+                    <Text style={styles.statLabel}>{t('orders')}</Text>
+                    <Text style={styles.statValue}>{analyticsData.totalTransactions}</Text>
                 </View>
             </View>
 
@@ -199,27 +182,11 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    header: {
-        padding: 24,
-        backgroundColor: '#FFFFFF',
-        borderBottomWidth: 1,
-        borderBottomColor: '#F1F5F9',
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: '800',
-        color: '#0B0F2F',
-        letterSpacing: -0.5,
-    },
-    subtitle: {
-        fontSize: 14,
-        color: '#64748B',
-        marginTop: 4,
-    },
     filterContainer: {
         flexDirection: 'row',
         padding: 20,
         gap: 12,
+        marginTop: 10,
     },
     filterBtn: {
         flex: 1,
@@ -229,10 +196,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderWidth: 1,
         borderColor: '#E2E8F0',
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 },
-            android: { elevation: 2 },
-        }),
+        elevation: 2,
     },
     activeFilterBtn: {
         backgroundColor: '#0B0F2F',
@@ -259,10 +223,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         borderWidth: 1,
         borderColor: '#F1F5F9',
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10 },
-            android: { elevation: 3 },
-        }),
+        elevation: 3,
     },
     iconBox: {
         width: 48,
@@ -277,10 +238,9 @@ const styles = StyleSheet.create({
         color: '#64748B',
         fontWeight: '600',
         textTransform: 'uppercase',
-        letterSpacing: 0.5,
     },
     statValue: {
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: '800',
         color: '#0B0F2F',
         marginTop: 4,
@@ -293,31 +253,26 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         borderWidth: 1,
         borderColor: '#F1F5F9',
-    },
-    sectionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 15,
+        elevation: 2,
     },
     sectionTitle: {
         fontSize: 18,
         fontWeight: '700',
         color: '#0B0F2F',
-        marginBottom: 15,
+        marginBottom: 20,
     },
-    chartPlaceholder: {
+    chartArea: {
         minHeight: 100,
     },
-    barContainer: {
-        marginBottom: 16,
+    barItem: {
+        marginBottom: 18,
     },
-    barLabelGroup: {
+    barHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginBottom: 8,
     },
-    barLabel: {
+    barName: {
         fontSize: 14,
         fontWeight: '600',
         color: '#334155',
@@ -327,27 +282,15 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: '#0B0F2F',
     },
-    barBg: {
-        height: 10,
+    barTrack: {
+        height: 8,
         backgroundColor: '#F1F5F9',
-        borderRadius: 5,
+        borderRadius: 4,
         overflow: 'hidden',
     },
     barFill: {
         height: '100%',
-        borderRadius: 5,
-    },
-    insightCard: {
-        backgroundColor: '#F8FAFC',
-        padding: 16,
-        borderRadius: 12,
-        borderLeftWidth: 4,
-        borderLeftColor: '#10B981',
-    },
-    insightText: {
-        fontSize: 14,
-        color: '#475569',
-        lineHeight: 20,
+        borderRadius: 4,
     },
     emptyText: {
         textAlign: 'center',

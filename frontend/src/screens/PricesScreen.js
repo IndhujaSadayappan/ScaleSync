@@ -11,8 +11,10 @@ import {
   RefreshControl,
 } from 'react-native';
 import { productService } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 const PricesScreen = () => {
+  const { t } = useLanguage();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -94,7 +96,7 @@ const PricesScreen = () => {
                   style={styles.priceInput}
                   value={editPrice}
                   onChangeText={setEditPrice}
-                  placeholder="Enter price per litre"
+                  placeholder={t('enterPrice')}
                   keyboardType="decimal-pad"
                   placeholderTextColor="#999"
                 />
@@ -103,13 +105,13 @@ const PricesScreen = () => {
                     style={[styles.button, styles.saveButton]}
                     onPress={() => handleSave(product.id)}
                   >
-                    <Text style={styles.buttonText}>Save</Text>
+                    <Text style={styles.buttonText}>{t('save')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.button, styles.cancelButton]}
                     onPress={handleCancel}
                   >
-                    <Text style={styles.buttonText}>Cancel</Text>
+                    <Text style={[styles.buttonText, { color: '#EF4444' }]}>{t('cancel')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -120,7 +122,7 @@ const PricesScreen = () => {
                   style={styles.editButton}
                   onPress={() => handleEdit(product)}
                 >
-                  <Text style={styles.editButtonText}>Edit</Text>
+                  <Text style={styles.editButtonText}>{t('update')}</Text>
                 </TouchableOpacity>
               </View>
             )}

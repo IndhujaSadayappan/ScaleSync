@@ -13,8 +13,10 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { stockService, productService } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 const StockScreen = () => {
+    const { t } = useLanguage();
     const [stockItems, setStockItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -128,13 +130,13 @@ const StockScreen = () => {
                                         style={[styles.button, styles.saveButton]}
                                         onPress={() => handleSave(item.product_id)}
                                     >
-                                        <Text style={styles.buttonText}>Save</Text>
+                                        <Text style={styles.buttonText}>{t('save')}</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         style={[styles.button, styles.cancelButton]}
                                         onPress={handleCancel}
                                     >
-                                        <Text style={styles.buttonText}>Cancel</Text>
+                                        <Text style={[styles.buttonText, { color: '#EF4444' }]}>{t('cancel')}</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
@@ -148,7 +150,7 @@ const StockScreen = () => {
                                         style={styles.editButton}
                                         onPress={() => handleEdit(item)}
                                     >
-                                        <Text style={styles.editButtonText}>Update Stock</Text>
+                                        <Text style={styles.editButtonText}>{t('updateStock')}</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         style={styles.deleteButton}

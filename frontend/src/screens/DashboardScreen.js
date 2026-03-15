@@ -18,6 +18,7 @@ import * as Sharing from 'expo-sharing';
 import { Ionicons } from '@expo/vector-icons';
 import { salesService, productService, stockService } from '../services/api';
 import { useFocusEffect } from '@react-navigation/native';
+import { useLanguage } from '../context/LanguageContext';
 
 // For Web date picking
 const WebDatePicker = ({ label, value, onChange }) => (
@@ -41,6 +42,7 @@ const WebDatePicker = ({ label, value, onChange }) => (
 );
 
 const DashboardScreen = () => {
+  const { t } = useLanguage();
   const [sales, setSales] = useState(null);
   const [stockItems, setStockItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -217,7 +219,7 @@ const DashboardScreen = () => {
             style={[styles.miniTab, !isRange && styles.activeMiniTab]}
             onPress={() => setIsRange(false)}
           >
-            <Text style={[styles.miniTabText, !isRange && styles.activeMiniTabText]}>Single</Text>
+            <Text style={[styles.miniTabText, !isRange && styles.activeMiniTabText]}>{t('today')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.miniTab, isRange && styles.activeMiniTab]}
@@ -236,7 +238,7 @@ const DashboardScreen = () => {
           ) : (
             <View style={styles.mobileDateRow}>
               <TouchableOpacity style={styles.dateBox} onPress={() => setShowStartPicker(true)}>
-                <Text style={styles.dateLabel}>{isRange ? "From" : "Date"}</Text>
+                <Text style={styles.dateLabel}>{isRange ? "From" : t('today')}</Text>
                 <Text style={styles.dateValue}>{format(startDate, 'dd MMM')}</Text>
               </TouchableOpacity>
 
@@ -284,17 +286,17 @@ const DashboardScreen = () => {
       >
         <View style={styles.summaryGrid}>
           <View style={styles.simpleCard}>
-            <Text style={styles.cardInfoLabel}>TOTAL EARNINGS</Text>
+            <Text style={styles.cardInfoLabel}>{t('totalEarnings')}</Text>
             <Text style={styles.cardInfoValue}>₹{sales?.totalEarnings || '0.00'}</Text>
           </View>
           <View style={styles.simpleCard}>
-            <Text style={styles.cardInfoLabel}>TRANSACTIONS</Text>
+            <Text style={styles.cardInfoLabel}>{t('transactions')}</Text>
             <Text style={styles.cardInfoValue}>{sales?.totalTransactions || 0}</Text>
           </View>
         </View>
 
         <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>Current Stock Levels</Text>
+          <Text style={styles.sectionTitle}>{t('currentStock')}</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.stockScroll}>
           {stockItems && stockItems.length > 0 ? (
@@ -325,10 +327,10 @@ const DashboardScreen = () => {
         )}
 
         <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>Category Breakdown</Text>
+          <Text style={styles.sectionTitle}>{t('categoryBreakdownTitle')}</Text>
           <TouchableOpacity onPress={downloadReceipt} style={styles.reportBtn}>
             <Ionicons name="document-text-outline" size={18} color="#0B0F2F" />
-            <Text style={styles.reportBtnText}>PDF Report</Text>
+            <Text style={styles.reportBtnText}>{t('pdfReport')}</Text>
           </TouchableOpacity>
         </View>
 

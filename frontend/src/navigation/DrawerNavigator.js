@@ -14,6 +14,7 @@ import PricesScreen from '../screens/PricesScreen';
 import StockScreen from '../screens/StockScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -39,6 +40,7 @@ const HeaderLogo = () => (
 
 const CustomDrawerContent = (props) => {
   const { logout } = useAuth();
+  const { language, changeLanguage, t } = useLanguage();
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -50,6 +52,35 @@ const CustomDrawerContent = (props) => {
       </DrawerContentScrollView>
 
       <View style={{ padding: 20, borderTopWidth: 1, borderTopColor: '#F3F4F6' }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 }}>
+          <TouchableOpacity
+            style={{
+              flex: 1,
+              padding: 10,
+              backgroundColor: language === 'en' ? '#0B0F2F' : '#F3F4F6',
+              borderRadius: 8,
+              marginRight: 5,
+              alignItems: 'center'
+            }}
+            onPress={() => changeLanguage('en')}
+          >
+            <Text style={{ color: language === 'en' ? '#FFF' : '#0B0F2F', fontWeight: 'bold' }}>English</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{
+              flex: 1,
+              padding: 10,
+              backgroundColor: language === 'ta' ? '#0B0F2F' : '#F3F4F6',
+              borderRadius: 8,
+              marginLeft: 5,
+              alignItems: 'center'
+            }}
+            onPress={() => changeLanguage('ta')}
+          >
+            <Text style={{ color: language === 'ta' ? '#FFF' : '#0B0F2F', fontWeight: 'bold' }}>தமிழ்</Text>
+          </TouchableOpacity>
+        </View>
+
         <TouchableOpacity
           style={{
             flexDirection: 'row',
@@ -60,7 +91,7 @@ const CustomDrawerContent = (props) => {
           }}
           onPress={() => logout()}
         >
-          <Text style={{ color: '#EF4444', fontWeight: 'bold', marginLeft: 10 }}>Logout</Text>
+          <Text style={{ color: '#EF4444', fontWeight: 'bold', marginLeft: 10 }}>{t('logout')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -122,27 +153,27 @@ const DrawerNavigatorComponent = () => {
       <Drawer.Screen
         name="Home"
         component={DashboardStack}
-        options={{ title: 'Dashboard' }}
+        options={{ title: t('dashboard') }}
       />
       <Drawer.Screen
         name="Notifications"
         component={NotificationsStack}
-        options={{ title: 'Notifications' }}
+        options={{ title: t('notifications') }}
       />
       <Drawer.Screen
         name="Prices"
         component={PricesStack}
-        options={{ title: 'Update Prices' }}
+        options={{ title: t('prices') }}
       />
       <Drawer.Screen
         name="Stock"
         component={StockStack}
-        options={{ title: 'Stock Management' }}
+        options={{ title: t('stock') }}
       />
       <Drawer.Screen
         name="Analytics"
         component={AnalyticsStack}
-        options={{ title: 'Sales Analytics' }}
+        options={{ title: t('analytics') }}
       />
     </Drawer.Navigator>
   );

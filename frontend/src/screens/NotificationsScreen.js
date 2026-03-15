@@ -9,8 +9,10 @@ import {
   Alert,
 } from 'react-native';
 import { salesService } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 const NotificationsScreen = () => {
+  const { t } = useLanguage();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -60,7 +62,7 @@ const NotificationsScreen = () => {
                 <Text style={styles.productName}>{notification.product_name}</Text>
                 {notification.is_mismatch && (
                   <View style={styles.mismatchTag}>
-                    <Text style={styles.mismatchText}>Stock Mismatch!</Text>
+                    <Text style={styles.mismatchText}>{t('stockMismatch')}</Text>
                   </View>
                 )}
               </View>
@@ -76,11 +78,11 @@ const NotificationsScreen = () => {
             </View>
             <View style={styles.notificationDetails}>
               <View style={styles.detailItem}>
-                <Text style={styles.label}>Weight:</Text>
+                <Text style={styles.label}>{t('weight')}</Text>
                 <Text style={styles.value}>{parseFloat(notification.weight).toFixed(2)} L</Text>
               </View>
               <View style={styles.detailItem}>
-                <Text style={styles.label}>Amount:</Text>
+                <Text style={styles.label}>{t('amount')}</Text>
                 <Text style={styles.value}>
                   ₹{parseFloat(notification.total_amount).toFixed(2)}
                 </Text>
@@ -89,7 +91,9 @@ const NotificationsScreen = () => {
           </View>
         ))
       ) : (
-        <Text style={styles.emptyText}>No notifications yet</Text>
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>{t('noNotifications')}</Text>
+        </View>
       )}
     </ScrollView>
   );
