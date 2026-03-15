@@ -130,6 +130,7 @@ const AnalyticsStack = () => (
 
 const DrawerNavigatorComponent = () => {
   const { logout } = useAuth();
+  const { t } = useLanguage();
 
   const handleLogout = () => {
     logout();
