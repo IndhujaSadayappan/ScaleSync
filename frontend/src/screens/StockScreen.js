@@ -24,17 +24,12 @@ const StockScreen = () => {
     const [addModalVisible, setAddModalVisible] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [showProductDropdown, setShowProductDropdown] = useState(false);
-    const [availableProducts, setAvailableProducts] = useState([]);
     const [newStock, setNewStock] = useState('');
 
     const fetchData = async () => {
         try {
-            const [stockRes, productsRes] = await Promise.all([
-                stockService.getStock(),
-                productService.getProducts()
-            ]);
-            setStockItems(stockRes.data);
-            setAvailableProducts(productsRes.data);
+            const response = await stockService.getStock();
+            setStockItems(response.data);
         } catch (error) {
             console.error('Error fetching data:', error);
             Alert.alert('Error', 'Failed to fetch data');
@@ -125,7 +120,10 @@ const StockScreen = () => {
         }
     };
 
-    const dropdownProducts = availableProducts;
+    const dropdownProducts = stockItems.map(item => ({
+        id: item.product_id,
+        name: item.product_name
+    }));
 
     if (loading) {
         return (
