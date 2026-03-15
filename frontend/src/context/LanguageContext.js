@@ -34,7 +34,12 @@ const translations = {
         save: 'Save',
         cancel: 'Cancel',
         noNotifications: 'No notifications yet',
-        enterPrice: 'Enter price per L'
+        enterPrice: 'Enter price per L',
+        stockLevels: 'Stock Levels',
+        zeroStockAlert: 'CRITICAL: Zero Stock detected!',
+        from: 'From',
+        to: 'To',
+        selectDate: 'Select Date'
     },
     ta: {
         dashboard: 'முகப்பு',
@@ -68,7 +73,12 @@ const translations = {
         save: 'சேமி',
         cancel: 'ரத்து செய்',
         noNotifications: 'அறிவிப்புகள் ஏதும் இல்லை',
-        enterPrice: 'லிட்டர் விலையை உள்ளிடவும்'
+        enterPrice: 'லிட்டர் விலையை உள்ளிடவும்',
+        stockLevels: 'இருப்பு நிலைகள்',
+        zeroStockAlert: 'மிகவும் முக்கியம்: இருப்பு பூஜ்ஜியம்!',
+        from: 'தொடக்கம்',
+        to: 'முடிவு',
+        selectDate: 'தேதியைத் தேர்ந்தெடு'
     }
 };
 
