@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
     View,
     Text,
@@ -11,6 +11,7 @@ import {
     RefreshControl,
     Modal,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { stockService, productService } from '../services/api';
 
@@ -43,9 +44,11 @@ const StockScreen = () => {
         }
     };
 
-    useEffect(() => {
-        fetchData();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            fetchData();
+        }, [])
+    );
 
     const onRefresh = () => {
         setRefreshing(true);
