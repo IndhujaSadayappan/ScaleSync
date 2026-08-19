@@ -1,18 +1,27 @@
 const admin = require('firebase-admin');
+const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
-// Initialize Firebase Admin SDK
-const path = require('path');
-
-const serviceAccountPath = path.resolve(
-  __dirname,
-  '..',
-  process.env.FIREBASE_CREDENTIALS_PATH
-);
-
 try {
-  if (serviceAccountPath && require('fs').existsSync(serviceAccountPath)) {
-    const serviceAccount = require(serviceAccountPath);
+  let serviceAccount = null;
+
+  // 1. Check for raw JSON string in environment variable (Production on Render)
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    serviceAccount = typeof process.env.FIREBASE_SERVICE_ACCOUNT === 'string'
+      ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+      : process.env.FIREBASE_SERVICE_ACCOUNT;
+  } 
+  // 2. Check for local file path if specified in .env (Local Development)
+  else if (process.env.FIREBASE_CREDENTIALS_PATH) {
+    const serviceAccountPath = path.resolve(__dirname, '..', process.env.FIREBASE_CREDENTIALS_PATH);
+    if (fs.existsSync(serviceAccountPath)) {
+      serviceAccount = require(serviceAccountPath);
+    }
+  }
+
+  // 3. Initialize Firebase if credentials exist
+  if (serviceAccount) {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
     });
@@ -31,9 +40,15 @@ const sendNotification = async (deviceToken, title, body, data = {}) => {
   }
 
   try {
+    // Ensure all values in 'data' payload are converted to strings (FCM Requirement)
+    const stringifiedData = Object.keys(data).reduce((acc, key) => {
+      acc[key] = String(data[key]);
+      return acc;
+    }, {});
+
     const message = {
       notification: { title, body },
-      data: data,
+      data: stringifiedData,
       token: deviceToken,
     };
 
