@@ -2,7 +2,13 @@ const admin = require('firebase-admin');
 require('dotenv').config();
 
 // Initialize Firebase Admin SDK
-const serviceAccountPath = process.env.FIREBASE_CREDENTIALS_PATH;
+const path = require('path');
+
+const serviceAccountPath = path.resolve(
+  __dirname,
+  '..',
+  process.env.FIREBASE_CREDENTIALS_PATH
+);
 
 try {
   if (serviceAccountPath && require('fs').existsSync(serviceAccountPath)) {
